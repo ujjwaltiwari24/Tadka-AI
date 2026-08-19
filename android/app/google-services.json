@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "668330228215",
+    "project_id": "tadkaai-f90a1",
+    "storage_bucket": "tadkaai-f90a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:668330228215:android:feeba03820c21427c8d6f2",
+        "android_client_info": {
+          "package_name": "com.tadkaai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "668330228215-gja4s4nm3m1essmfnc27ji1gsd4af716.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBITn4tM9R5gmKVw_E_inD4B-Xugj9PLLM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "668330228215-gja4s4nm3m1essmfnc27ji1gsd4af716.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

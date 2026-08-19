@@ -1,0 +1,29 @@
+name: tadka_ai_latest
+description: TADKA AI - Your personal cooking assistant.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  http: ^1.5.0
+  firebase_core: ^4.13.0
+  cloud_firestore: ^6.8.0
+  google_mobile_ads: ^6.0.0
+  firebase_auth: ^6.5.7
+  google_sign_in: ^7.2.0
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

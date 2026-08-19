@@ -1,0 +1,17 @@
+{
+  "name": "tadka-ai-backend",
+  "version": "1.0.0",
+  "description": "Backend API for TADKA AI",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.16.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0"
+  }
+}
