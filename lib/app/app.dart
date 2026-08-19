@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'main_navigation_screen.dart';
+import '../features/splash/splash_screen.dart';
 import 'theme/app_theme.dart';
 
 class TadkaAIApp extends StatelessWidget {
@@ -9,12 +9,12 @@ class TadkaAIApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TADKA AI',
+      title: 'Tadka AI',
       debugShowCheckedModeBanner: false,
 
       theme: AppTheme.lightTheme,
 
-      home: const MainNavigationScreen(),
+      home: const SplashScreen(),
     );
   }
 }

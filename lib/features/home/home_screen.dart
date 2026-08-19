@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import '../legal/legal_screens.dart';
 import '../auth/auth_screen.dart';
 import '../ingredients/ingredients_screen.dart';
 import '../recipes/search_recipe_screen.dart';
 import '../profile/profile_screen.dart';
 import '../cookbook/cookbook_screen.dart';
+import '../streak/daily_streak_screen.dart';
+import '../../services/coins/coin_service.dart';
 import '../../services/auth/auth_service.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -255,12 +258,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
 
                 _MenuTile(
-                  icon: Icons.tune_rounded,
-                  title: 'Preferences',
-                  subtitle: 'Diet, spice level and more',
+                  icon: Icons.gavel_rounded,
+                  title: 'Legal',
+                  subtitle: 'Privacy, terms and account policies',
                   onTap: () {
                     Navigator.pop(sheetContext);
-                    _showComingSoon('Preferences');
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LegalPagesScreen(),
+                      ),
+                    );
                   },
                 ),
 
@@ -426,14 +435,15 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      backgroundColor:
-      Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
         ),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
+        final colors = Theme.of(sheetContext).colorScheme;
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -450,43 +460,78 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: 'TADKA AI',
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
+                // SAVED RECIPES
                 _MenuTile(
-                  icon:
-                  Icons.bookmark_outline_rounded,
+                  icon: Icons.bookmark_outline_rounded,
                   title: 'Saved recipes',
-                  subtitle:
-                  'View your saved recipes',
+                  subtitle: 'View your saved recipes',
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     _openProfile();
                   },
                 ),
 
+                const SizedBox(height: 8),
+
+                // LEGAL
                 _MenuTile(
-                  icon: Icons.tune_rounded,
-                  title: 'Preferences',
-                  subtitle:
-                  'Diet, spice level and more',
+                  icon: Icons.gavel_rounded,
+                  title: 'Legal',
+                  subtitle: 'Privacy, terms and account policies',
                   onTap: () {
-                    Navigator.pop(context);
-                    _showComingSoon(
-                      'Preferences',
+                    Navigator.pop(sheetContext);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LegalPagesScreen(),
+                      ),
                     );
                   },
                 ),
 
+                const SizedBox(height: 8),
+
+                // ABOUT
                 _MenuTile(
-                  icon:
-                  Icons.info_outline_rounded,
+                  icon: Icons.info_outline_rounded,
                   title: 'About TADKA',
-                  subtitle:
-                  'Your AI cooking assistant',
+                  subtitle: 'Your AI cooking assistant',
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     _showAboutDialog();
                   },
+                ),
+
+                const SizedBox(height: 8),
+
+                // CLOSE
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 13,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'CLOSE',
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -642,6 +687,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap:
                         _openIngredients,
                       ),
+
+                      const SizedBox(
+                        height: 22,
+                      ),
+
+                      const _DailyStreakHomeButton(),
 
                       const SizedBox(
                         height: 31,
@@ -2698,6 +2749,422 @@ class _MenuTile
         size: 13,
       ),
       onTap: onTap,
+    );
+  }
+}
+// ============================================================================
+// DAILY STREAK - PREMIUM HOME CARD
+// ============================================================================
+
+class _DailyStreakHomeButton extends StatelessWidget {
+  const _DailyStreakHomeButton();
+
+  void _openStreak(BuildContext context) {
+    HapticFeedback.selectionClick();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DailyStreakScreen(),
+      ),
+    );
+  }
+
+  int _rewardForDay(int day) {
+    const rewards = [2, 4, 6, 8, 10, 15, 30];
+
+    final safeDay = day.clamp(1, 7);
+    return rewards[safeDay - 1];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: CoinService.instance.watchStreak(),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? <String, dynamic>{};
+
+        final current =
+            (data['current'] as num?)?.toInt() ?? 0;
+
+        final claimedToday =
+            data['claimedToday'] == true;
+
+        final rawNextDay =
+            (data['nextDay'] as num?)?.toInt() ??
+                (current + 1);
+
+        final claimDay =
+        rawNextDay.clamp(1, 7);
+
+        final todayDay =
+        claimedToday
+            ? current.clamp(1, 7)
+            : claimDay;
+
+        final todayReward =
+        _rewardForDay(todayDay);
+
+        final tomorrowDay =
+        claimedToday
+            ? (claimDay.clamp(1, 7))
+            : ((claimDay + 1).clamp(1, 7));
+
+        final tomorrowReward =
+        _rewardForDay(tomorrowDay);
+
+        final progress =
+        (current.clamp(0, 7) / 7);
+
+        return Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(23),
+          child: InkWell(
+            onTap: () => _openStreak(context),
+            borderRadius: BorderRadius.circular(23),
+            splashColor:
+            colors.primary.withValues(alpha: 0.05),
+            highlightColor:
+            colors.primary.withValues(alpha: 0.025),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(
+                15,
+                14,
+                13,
+                14,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colors.primary.withValues(
+                      alpha: 0.13,
+                    ),
+                    colors.primary.withValues(
+                      alpha: 0.045,
+                    ),
+                    theme.scaffoldBackgroundColor
+                        .withValues(alpha: 0.20),
+                  ],
+                  stops: const [
+                    0.0,
+                    0.55,
+                    1.0,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(23),
+                border: Border.all(
+                  color: colors.primary.withValues(
+                    alpha: 0.14,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.primary.withValues(
+                      alpha: 0.055,
+                    ),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // ----------------------------------------------------------
+                  // REWARD ICON
+                  // ----------------------------------------------------------
+
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          colors.primary,
+                          colors.primary.withValues(
+                            alpha: 0.72,
+                          ),
+                        ],
+                      ),
+                      borderRadius:
+                      BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary
+                              .withValues(
+                            alpha: 0.18,
+                          ),
+                          blurRadius: 13,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.card_giftcard_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // ----------------------------------------------------------
+                  // CONTENT
+                  // ----------------------------------------------------------
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'DAILY REWARD',
+                              style: TextStyle(
+                                color:
+                                colors.onSurface,
+                                fontSize: 8.5,
+                                fontWeight:
+                                FontWeight.w900,
+                                letterSpacing: 1.05,
+                              ),
+                            ),
+
+                            if (current > 0) ...[
+                              const SizedBox(width: 7),
+
+                              Container(
+                                padding:
+                                const EdgeInsets
+                                    .symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
+                                decoration:
+                                BoxDecoration(
+                                  color: colors.primary
+                                      .withValues(
+                                    alpha: 0.10,
+                                  ),
+                                  borderRadius:
+                                  BorderRadius
+                                      .circular(8),
+                                ),
+                                child: Text(
+                                  'DAY $current',
+                                  style: TextStyle(
+                                    color:
+                                    colors.primary,
+                                    fontSize: 6.8,
+                                    fontWeight:
+                                    FontWeight.w900,
+                                    letterSpacing: 0.45,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        if (!claimedToday)
+                          Row(
+                            children: [
+                              Text(
+                                '+$todayReward',
+                                style: TextStyle(
+                                  color:
+                                  colors.primary,
+                                  fontSize: 17,
+                                  fontWeight:
+                                  FontWeight.w900,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons
+                                    .monetization_on_rounded,
+                                color:
+                                colors.primary,
+                                size: 15,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'COINS',
+                                style: TextStyle(
+                                  color:
+                                  colors.primary,
+                                  fontSize: 8,
+                                  fontWeight:
+                                  FontWeight.w900,
+                                  letterSpacing: 0.65,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'waiting for you',
+                                style: TextStyle(
+                                  color: colors
+                                      .onSurfaceVariant,
+                                  fontSize: 9,
+                                  fontWeight:
+                                  FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              Icon(
+                                Icons
+                                    .check_circle_rounded,
+                                color:
+                                colors.primary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '+$todayReward COINS',
+                                style: TextStyle(
+                                  color:
+                                  colors.primary,
+                                  fontSize: 11,
+                                  fontWeight:
+                                  FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'claimed',
+                                style: TextStyle(
+                                  color: colors
+                                      .onSurfaceVariant,
+                                  fontSize: 9,
+                                  fontWeight:
+                                  FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 7),
+
+                        // ----------------------------------------------------
+                        // 7-DAY PROGRESS
+                        // ----------------------------------------------------
+
+                        Row(
+                          children: List.generate(
+                            7,
+                                (index) {
+                              final day = index + 1;
+
+                              final completed =
+                                  current >= day;
+
+                              final active =
+                                  !claimedToday &&
+                                      day == todayDay;
+
+                              return Expanded(
+                                child: Container(
+                                  height: 4,
+                                  margin:
+                                  EdgeInsets.only(
+                                    right:
+                                    index == 6
+                                        ? 0
+                                        : 3,
+                                  ),
+                                  decoration:
+                                  BoxDecoration(
+                                    color: completed ||
+                                        active
+                                        ? colors.primary
+                                        : colors.outline
+                                        .withValues(
+                                      alpha: 0.10,
+                                    ),
+                                    borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                      10,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          claimedToday
+                              ? 'Come back tomorrow • +$tomorrowReward COINS'
+                              : 'Claim today and keep your streak alive',
+                          maxLines: 1,
+                          overflow:
+                          TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color:
+                            colors.onSurfaceVariant,
+                            fontSize: 7.8,
+                            fontWeight:
+                            FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // ----------------------------------------------------------
+                  // ACTION
+                  // ----------------------------------------------------------
+
+                  Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(
+                      color: colors.surface
+                          .withValues(
+                        alpha: 0.88,
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colors.outline
+                            .withValues(
+                          alpha: 0.07,
+                        ),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons
+                          .arrow_forward_rounded,
+                      color:
+                      colors.primary,
+                      size: 17,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

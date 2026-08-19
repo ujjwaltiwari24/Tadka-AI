@@ -1,246 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../auth/auth_service.dart';
-
-class CoinService {
-  CoinService._();
-
-  static final CoinService instance = CoinService._();
-
-  static final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
-
-  static const int welcomeCoins = 10;
-  static const int rewardCoinsPerAd = 1;
-  static const int dailyRewardAdLimit = 10;
-
-  CollectionReference<Map<String, dynamic>> get _users =>
-      _firestore.collection('users');
-
-  User? get currentUser =>
-      AuthService.instance.currentUser;
-
-  DocumentReference<Map<String, dynamic>>? get _userDocument {
-    final user = currentUser;
-    if (user == null) return null;
-
-    return _users.doc(user.uid);
-  }
-
-  Future<int> ensureWallet() async {
-    final document = _userDocument;
-
-    if (document == null) {
-      throw const CoinException(
-        'Please sign in to use TADKA Coins.',
-      );
-    }
-
-    return _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(document);
-
-      if (!snapshot.exists) {
-        transaction.set(
-          document,
-          {
-            'coins': welcomeCoins,
-            'coinWalletCreatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-
-        return welcomeCoins;
-      }
-
-      final data = snapshot.data() ?? {};
-      final existingCoins = _toInt(data['coins']);
-
-      if (!data.containsKey('coins')) {
-        transaction.update(
-          document,
-          {
-            'coins': welcomeCoins,
-            'coinWalletCreatedAt':
-            FieldValue.serverTimestamp(),
-          },
-        );
-
-        return welcomeCoins;
-      }
-
-      return existingCoins;
-    });
-  }
-
-  Future<int> getCoins() async {
-    final document = _userDocument;
-
-    if (document == null) return 0;
-
-    final snapshot = await document.get();
-
-    if (!snapshot.exists) {
-      return ensureWallet();
-    }
-
-    final data = snapshot.data() ?? {};
-
-    if (!data.containsKey('coins')) {
-      return ensureWallet();
-    }
-
-    return _toInt(data['coins']);
-  }
-
-  Stream<int> watchCoins() {
-    final document = _userDocument;
-
-    if (document == null) {
-      return Stream<int>.value(0);
-    }
-
-    return document.snapshots().map((snapshot) {
-      if (!snapshot.exists) return 0;
-
-      final data = snapshot.data() ?? {};
-      return _toInt(data['coins']);
-    });
-  }
-
-  Future<int> spendCoin() async {
-    final document = _userDocument;
-
-    if (document == null) {
-      throw const CoinException(
-        'Please sign in to use TADKA Coins.',
-      );
-    }
-
-    return _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(document);
-
-      if (!snapshot.exists) {
-        throw const CoinException(
-          'Your coin wallet could not be found.',
-        );
-      }
-
-      final data = snapshot.data() ?? {};
-      final coins = _toInt(data['coins']);
-
-      if (coins <= 0) {
-        throw const CoinException(
-          'You do not have enough TADKA Coins.',
-        );
-      }
-
-      final updatedCoins = coins - 1;
-
-      transaction.update(
-        document,
-        {
-          'coins': updatedCoins,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-      );
-
-      return updatedCoins;
-    });
-  }
-
-  Future<int> grantRewardCoin() async {
-    final document = _userDocument;
-
-    if (document == null) {
-      throw const CoinException(
-        'Please sign in to earn TADKA Coins.',
-      );
-    }
-
-    final today = _dateKey(DateTime.now());
-
-    return _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(document);
-
-      if (!snapshot.exists) {
-        transaction.set(
-          document,
-          {
-            'coins': welcomeCoins,
-            'coinWalletCreatedAt':
-            FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-
-        throw const CoinException(
-          'Your coin wallet was just created. Please try the ad again.',
-        );
-      }
-
-      final data = snapshot.data() ?? {};
-
-      final previousDate =
-          data['rewardedAdDate']?.toString() ?? '';
-
-      var adsToday = _toInt(
-        data['rewardedAdsToday'],
-      );
-
-      if (previousDate != today) {
-        adsToday = 0;
-      }
-
-      if (adsToday >= dailyRewardAdLimit) {
-        throw const CoinException(
-          'You have reached today’s ad reward limit. Come back tomorrow.',
-        );
-      }
-
-      final coins = _toInt(data['coins']);
-      final updatedCoins = coins + rewardCoinsPerAd;
-
-      transaction.update(
-        document,
-        {
-          'coins': updatedCoins,
-          'rewardedAdsToday': adsToday + 1,
-          'rewardedAdDate': today,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-      );
-
-      return updatedCoins;
-    });
-  }
-
-  Future<int> watchAdAndUnlock() async {
-    throw const CoinException(
-      'Use RewardedAdService to show the ad, then call grantRewardCoin() '
-          'and spendCoin() after the reward callback.',
-    );
-  }
-
-  String _dateKey(DateTime date) {
-    final local = date.toLocal();
-
-    final year = local.year.toString().padLeft(4, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    final day = local.day.toString().padLeft(2, '0');
-
-    return '$year-$month-$day';
-  }
-
-  int _toInt(dynamic value) {
-    if (value is int) return value;
-    return int.tryParse(
-      value?.toString() ?? '',
-    ) ??
-        0;
-  }
-}
-
 class CoinException implements Exception {
   final String message;
 
@@ -248,4 +8,539 @@ class CoinException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class StreakReward {
+  final int day;
+  final int coins;
+  final int currentStreak;
+  final bool claimedToday;
+
+  const StreakReward({
+    required this.day,
+    required this.coins,
+    required this.currentStreak,
+    required this.claimedToday,
+  });
+}
+
+class CoinService {
+  CoinService._();
+
+  static final CoinService instance = CoinService._();
+
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance;
+
+  final FirebaseAuth _auth =
+      FirebaseAuth.instance;
+
+  // ============================================================
+  // DAILY STREAK REWARDS
+  // ============================================================
+
+  static const List<int> streakRewards = [
+    2,  // Day 1
+    4,  // Day 2
+    6,  // Day 3
+    8,  // Day 4
+    10, // Day 5
+    15, // Day 6
+    30, // Day 7
+  ];
+
+  // ============================================================
+  // AUTH
+  // ============================================================
+
+  User? get currentUser => _auth.currentUser;
+
+  bool get isSignedIn => currentUser != null;
+
+  // ============================================================
+  // USER REFERENCE
+  // ============================================================
+
+  DocumentReference<Map<String, dynamic>> _userRef(
+      String uid,
+      ) {
+    return _firestore
+        .collection('users')
+        .doc(uid);
+  }
+
+  // ============================================================
+  // ENSURE WALLET
+  // ============================================================
+
+  Future<void> ensureWallet() async {
+    final user = currentUser;
+
+    if (user == null) {
+      throw const CoinException(
+        'Please sign in first.',
+      );
+    }
+
+    final ref = _userRef(user.uid);
+
+    final snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      await ref.set(
+        {
+          'coins': 10,
+
+          'streakCurrent': 0,
+          'streakLongest': 0,
+
+          'lastStreakClaimAt': null,
+          'lastStreakClaimDate': null,
+
+          'createdAt':
+          FieldValue.serverTimestamp(),
+
+          'updatedAt':
+          FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      return;
+    }
+
+    final data = snapshot.data() ?? {};
+
+    final updates =
+    <String, dynamic>{};
+
+    if (!data.containsKey('coins')) {
+      updates['coins'] = 10;
+    }
+
+    if (!data.containsKey('streakCurrent')) {
+      updates['streakCurrent'] = 0;
+    }
+
+    if (!data.containsKey('streakLongest')) {
+      updates['streakLongest'] = 0;
+    }
+
+    if (!data.containsKey(
+      'lastStreakClaimAt',
+    )) {
+      updates['lastStreakClaimAt'] = null;
+    }
+
+    if (!data.containsKey(
+      'lastStreakClaimDate',
+    )) {
+      updates['lastStreakClaimDate'] = null;
+    }
+
+    if (updates.isNotEmpty) {
+      updates['updatedAt'] =
+          FieldValue.serverTimestamp();
+
+      await ref.set(
+        updates,
+        SetOptions(merge: true),
+      );
+    }
+  }
+
+  // ============================================================
+  // COIN STREAM
+  // ============================================================
+
+  Stream<int> watchCoins() {
+    final user = currentUser;
+
+    if (user == null) {
+      return Stream<int>.value(0);
+    }
+
+    return _userRef(user.uid)
+        .snapshots()
+        .map((snapshot) {
+      final data = snapshot.data();
+
+      if (data == null) {
+        return 0;
+      }
+
+      final value = data['coins'];
+
+      if (value is int) {
+        return value;
+      }
+
+      return int.tryParse(
+        value?.toString() ?? '',
+      ) ??
+          0;
+    });
+  }
+
+  // ============================================================
+  // GET COINS
+  // ============================================================
+
+  Future<int> getCoins() async {
+    final user = currentUser;
+
+    if (user == null) {
+      return 0;
+    }
+
+    final snapshot =
+    await _userRef(user.uid).get();
+
+    final data =
+        snapshot.data() ?? {};
+
+    return int.tryParse(
+      data['coins']?.toString() ?? '0',
+    ) ??
+        0;
+  }
+
+  // ============================================================
+  // SPEND ONE COIN
+  // ============================================================
+
+  Future<void> spendCoin() async {
+    final user = currentUser;
+
+    if (user == null) {
+      throw const CoinException(
+        'Please sign in first.',
+      );
+    }
+
+    final ref = _userRef(user.uid);
+
+    await _firestore.runTransaction(
+          (transaction) async {
+        final snapshot =
+        await transaction.get(ref);
+
+        final data =
+            snapshot.data() ?? {};
+
+        final coins =
+            int.tryParse(
+              data['coins']
+                  ?.toString() ??
+                  '0',
+            ) ??
+                0;
+
+        if (coins <= 0) {
+          throw const CoinException(
+            'You do not have enough coins.',
+          );
+        }
+
+        transaction.update(
+          ref,
+          {
+            'coins': coins - 1,
+            'updatedAt':
+            FieldValue.serverTimestamp(),
+          },
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // ADD ONE COIN
+  // ============================================================
+
+  Future<void> grantRewardCoin() async {
+    final user = currentUser;
+
+    if (user == null) {
+      throw const CoinException(
+        'Please sign in first.',
+      );
+    }
+
+    final ref = _userRef(user.uid);
+
+    await _firestore.runTransaction(
+          (transaction) async {
+        final snapshot =
+        await transaction.get(ref);
+
+        final data =
+            snapshot.data() ?? {};
+
+        final coins =
+            int.tryParse(
+              data['coins']
+                  ?.toString() ??
+                  '0',
+            ) ??
+                0;
+
+        transaction.set(
+          ref,
+          {
+            'coins': coins + 1,
+            'updatedAt':
+            FieldValue.serverTimestamp(),
+          },
+          SetOptions(
+            merge: true,
+          ),
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // STREAK STREAM
+  // ============================================================
+
+  Stream<Map<String, dynamic>> watchStreak() {
+    final user = currentUser;
+
+    if (user == null) {
+      return Stream<
+          Map<String, dynamic>>.value(
+        {
+          'current': 0,
+          'longest': 0,
+          'claimedToday': false,
+          'nextDay': 1,
+          'nextReward': streakRewards[0],
+        },
+      );
+    }
+
+    return _userRef(user.uid)
+        .snapshots()
+        .map((snapshot) {
+      final data =
+          snapshot.data() ?? {};
+
+      final current =
+          int.tryParse(
+            data['streakCurrent']
+                ?.toString() ??
+                '0',
+          ) ??
+              0;
+
+      final longest =
+          int.tryParse(
+            data['streakLongest']
+                ?.toString() ??
+                '0',
+          ) ??
+              0;
+
+      final lastClaimDate =
+      data['lastStreakClaimDate']
+          ?.toString();
+
+      final today =
+      _dateKey(DateTime.now());
+
+      final claimedToday =
+          lastClaimDate == today;
+
+      int nextDay;
+
+      if (claimedToday) {
+        nextDay =
+        current >= 7
+            ? 1
+            : current + 1;
+      } else {
+        nextDay =
+        current >= 7
+            ? 1
+            : current + 1;
+      }
+
+      return {
+        'current': current,
+        'longest': longest,
+        'claimedToday': claimedToday,
+        'nextDay': nextDay,
+        'nextReward':
+        streakRewards[nextDay - 1],
+      };
+    });
+  }
+
+  // ============================================================
+  // CLAIM DAILY STREAK
+  // ============================================================
+
+  Future<StreakReward>
+  claimDailyStreak() async {
+    final user = currentUser;
+
+    if (user == null) {
+      throw const CoinException(
+        'Please sign in to claim your daily reward.',
+      );
+    }
+
+    final ref = _userRef(user.uid);
+
+    final now = DateTime.now();
+
+    final today =
+    _dateKey(now);
+
+    final yesterday =
+    _dateKey(
+      now.subtract(
+        const Duration(days: 1),
+      ),
+    );
+
+    late StreakReward result;
+
+    await _firestore.runTransaction(
+          (transaction) async {
+        final snapshot =
+        await transaction.get(ref);
+
+        final data =
+            snapshot.data() ?? {};
+
+        final lastClaimDate =
+        data['lastStreakClaimDate']
+            ?.toString();
+
+        // --------------------------------------------------------
+        // ALREADY CLAIMED
+        // --------------------------------------------------------
+
+        if (lastClaimDate == today) {
+          throw const CoinException(
+            'You have already claimed today.',
+          );
+        }
+
+        int currentStreak =
+            int.tryParse(
+              data['streakCurrent']
+                  ?.toString() ??
+                  '0',
+            ) ??
+                0;
+
+        int longestStreak =
+            int.tryParse(
+              data['streakLongest']
+                  ?.toString() ??
+                  '0',
+            ) ??
+                0;
+
+        // --------------------------------------------------------
+        // CONTINUE STREAK
+        // --------------------------------------------------------
+
+        if (lastClaimDate == yesterday) {
+          currentStreak++;
+
+          if (currentStreak > 7) {
+            currentStreak = 1;
+          }
+        }
+
+        // --------------------------------------------------------
+        // BROKEN / NEW STREAK
+        // --------------------------------------------------------
+
+        else {
+          currentStreak = 1;
+        }
+
+        final rewardCoins =
+        streakRewards[
+        currentStreak - 1];
+
+        if (currentStreak >
+            longestStreak) {
+          longestStreak =
+              currentStreak;
+        }
+
+        final currentCoins =
+            int.tryParse(
+              data['coins']
+                  ?.toString() ??
+                  '0',
+            ) ??
+                0;
+
+        transaction.set(
+          ref,
+          {
+            'coins':
+            currentCoins +
+                rewardCoins,
+
+            'streakCurrent':
+            currentStreak,
+
+            'streakLongest':
+            longestStreak,
+
+            'lastStreakClaimAt':
+            FieldValue.serverTimestamp(),
+
+            'lastStreakClaimDate':
+            today,
+
+            'updatedAt':
+            FieldValue.serverTimestamp(),
+          },
+          SetOptions(
+            merge: true,
+          ),
+        );
+
+        result = StreakReward(
+          day: currentStreak,
+          coins: rewardCoins,
+          currentStreak:
+          currentStreak,
+          claimedToday: true,
+        );
+      },
+    );
+
+    return result;
+  }
+
+  // ============================================================
+  // DATE KEY
+  // ============================================================
+
+  String _dateKey(DateTime date) {
+    final year =
+    date.year.toString();
+
+    final month =
+    date.month
+        .toString()
+        .padLeft(2, '0');
+
+    final day =
+    date.day
+        .toString()
+        .padLeft(2, '0');
+
+    return '$year-$month-$day';
+  }
 }

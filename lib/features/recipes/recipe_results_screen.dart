@@ -1,8 +1,11 @@
+
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/ads/banner_ad_widget.dart';
 import '../../services/auth/auth_service.dart';
 import '../auth/auth_screen.dart';
 import '../../services/coins/coin_service.dart';
@@ -33,101 +36,135 @@ class RecipeResultsScreen extends StatelessWidget {
     final primary = theme.colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+            ),
+            tooltip: 'Back',
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
           ),
-          tooltip: 'Back',
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.of(context).pop();
-          },
+          title: const Text(
+            'Your recipes',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
-        title: const Text(
-          'Your recipes',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: recipes.isEmpty
-            ? _EmptyState(
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          primary: primary,
-        )
-            : ListView(
-          physics:
-          const BouncingScrollPhysics(),
-          padding:
-          const EdgeInsets.fromLTRB(
-            20,
-            10,
-            20,
-            36,
-          ),
-          children: [
-            Text(
-              '${recipes.length} ${recipes.length == 1 ? 'idea' : 'ideas'} from your kitchen',
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 25,
-                fontWeight:
-                FontWeight.w900,
-                letterSpacing: -0.7,
-              ),
-            ),
-
-            const SizedBox(
-              height: 7,
-            ),
-
-            Text(
-              'Personalized around your ingredients and preferences.',
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(
-              height: 26,
-            ),
-
-            ...List.generate(
-              recipes.length,
-                  (index) {
-                return Padding(
-                  padding:
-                  EdgeInsets.only(
-                    bottom:
-                    index ==
-                        recipes.length -
-                            1
-                        ? 0
-                        : 14,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: recipes.isEmpty
+                    ? _EmptyState(
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                  primary: primary,
+                )
+                    : ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    10,
+                    20,
+                    24,
                   ),
-                  child:
-                  _RecipeCard(
-                    recipe:
-                    recipes[index],
-                    index: index,
-                    isTopMatch:
-                    index == 0,
-                  ),
-                );
-              },
-            ),
-          ],
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${recipes.length} ${recipes.length == 1 ? 'idea' : 'ideas'} from your kitchen',
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.7,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              Text(
+                                'Personalized around your ingredients and preferences.',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: primary.withValues(alpha: 0.12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 14,
+                                color: primary,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'AI PICKED',
+                                style: TextStyle(
+                                  color: primary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.7,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 26),
+                    ...List.generate(
+                      recipes.length,
+                          (index) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index == recipes.length - 1
+                              ? 0
+                              : 14,
+                        ),
+                        child: _RecipeCard(
+                          recipe: recipes[index],
+                          index: index,
+                          isTopMatch: index == 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const BannerAdWidget(),
+              const SizedBox(height: 4),
+            ],
+          ),
         ),
-      ),
     );
   }
 }
-
 // ============================================================================
 // RECIPE CARD
 // ============================================================================
@@ -198,10 +235,19 @@ class _RecipeCard extends StatelessWidget {
           decoration:
           BoxDecoration(
             borderRadius:
-            BorderRadius.circular(20),
+            BorderRadius.circular(22),
             border: Border.all(
               color: border,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: isDark ? 0.16 : 0.045,
+                ),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment:
