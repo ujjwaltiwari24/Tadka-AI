@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../services/ads/banner_ad_widget.dart';
 import '../../services/auth/auth_service.dart';
 import '../auth/auth_screen.dart';
+import '../cooking/start_cooking_screen.dart';
 import '../../services/coins/coin_service.dart';
 import '../../services/ads/rewarded_ad_service.dart';
 import 'recipe.dart';
@@ -36,135 +37,136 @@ class RecipeResultsScreen extends StatelessWidget {
     final primary = theme.colorScheme.primary;
 
     return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-            ),
-            tooltip: 'Back',
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              Navigator.of(context).pop();
-            },
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_rounded,
           ),
-          title: const Text(
-            'Your recipes',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-            ),
+          tooltip: 'Back',
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text(
+          'Your recipes',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
           ),
         ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: recipes.isEmpty
-                    ? _EmptyState(
-                  textPrimary: textPrimary,
-                  textSecondary: textSecondary,
-                  primary: primary,
-                )
-                    : ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                    20,
-                    10,
-                    20,
-                    24,
-                  ),
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${recipes.length} ${recipes.length == 1 ? 'idea' : 'ideas'} from your kitchen',
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.7,
-                                ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: recipes.isEmpty
+                  ? _EmptyState(
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                primary: primary,
+              )
+                  : ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  10,
+                  20,
+                  24,
+                ),
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${recipes.length} ${recipes.length == 1 ? 'idea' : 'ideas'} from your kitchen',
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 25,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.7,
                               ),
-                              const SizedBox(height: 7),
-                              Text(
-                                'Personalized around your ingredients and preferences.',
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 13,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: primary.withValues(alpha: 0.12),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 14,
-                                color: primary,
+                            const SizedBox(height: 7),
+                            Text(
+                              'Personalized around your ingredients and preferences.',
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 13,
+                                height: 1.4,
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'AI PICKED',
-                                style: TextStyle(
-                                  color: primary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.7,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 26),
-                    ...List.generate(
-                      recipes.length,
-                          (index) => Padding(
-                        padding: EdgeInsets.only(
-                          bottom: index == recipes.length - 1
-                              ? 0
-                              : 14,
-                        ),
-                        child: _RecipeCard(
-                          recipe: recipes[index],
-                          index: index,
-                          isTopMatch: index == 0,
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: primary.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 14,
+                              color: primary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'AI PICKED',
+                              style: TextStyle(
+                                color: primary,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.7,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 26),
+                  ...List.generate(
+                    recipes.length,
+                        (index) => Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == recipes.length - 1
+                            ? 0
+                            : 14,
+                      ),
+                      child: _RecipeCard(
+                        recipe: recipes[index],
+                        index: index,
+                        isTopMatch: index == 0,
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const BannerAdWidget(),
-              const SizedBox(height: 4),
-            ],
-          ),
+            ),
+            const BannerAdWidget(),
+            const SizedBox(height: 4),
+          ],
         ),
+      ),
     );
   }
 }
+
 // ============================================================================
 // RECIPE CARD
 // ============================================================================
@@ -2573,6 +2575,98 @@ class _RecipeDetailScreenState
               ),
 
               // ==============================================================
+              // START COOKING CTA
+              // ==============================================================
+
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      primary,
+                      primary.withValues(alpha: 0.78),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primary.withValues(alpha: 0.22),
+                      blurRadius: 22,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StartCookingScreen(
+                            recipe: recipe,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(17, 15, 17, 15),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Icon(
+                              Icons.restaurant_rounded,
+                              color: Colors.white,
+                              size: 25,
+                            ),
+                          ),
+                          const SizedBox(width: 13),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Ready to cook?',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Start Cooking',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 23,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
               // SAVE CTA
               // ==============================================================
 

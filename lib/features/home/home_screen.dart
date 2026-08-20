@@ -2390,23 +2390,8 @@ class _FeatureList
 
         const SizedBox(height: 9),
 
-        _FeatureTile(
-          icon:
-          Icons.bookmark_outline_rounded,
-          title: 'Saved recipes',
-          subtitle:
-          'Keep your favourite recipes',
-          primary: primary,
-          surface: surface,
-          border: border,
-          textPrimary: textPrimary,
-          textSecondary:
-          textSecondary,
-          onTap: () =>
-              onComingSoon(
-                'Saved recipes',
-              ),
-        ),
+
+
       ],
     );
   }
@@ -2582,7 +2567,7 @@ class _HomeFooter
           const SizedBox(height: 12),
 
           Text(
-            'Made for everyday cooking',
+            'Made with ❤ In India',
             style: TextStyle(
               color:
               textSecondary.withValues(
