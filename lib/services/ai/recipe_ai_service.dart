@@ -1,3 +1,5 @@
+// lib/features/recipes/recipe_ai_service.dart
+
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +15,21 @@ class RecipeAIException implements Exception {
 
   @override
   String toString() => message;
+}
+
+// ============================================================================
+// UNSAFE INGREDIENT EXCEPTION
+// ============================================================================
+//
+// A specialized exception thrown when the user's ingredients (or, as a
+// defensive fallback, a generated recipe) contain something that is not a
+// safe, edible, food-grade item. Kept as a subtype of RecipeAIException so
+// every existing `on RecipeAIException` catch clause continues to work
+// without any changes.
+// ============================================================================
+
+class UnsafeIngredientException extends RecipeAIException {
+  const UnsafeIngredientException(super.message);
 }
 
 class RecipeAIService {
@@ -43,7 +60,13 @@ class RecipeAIService {
       }
 
       // -----------------------------------------------------------------------
-      // 1. Get Gemini configuration from Firestore
+      // 1a. Safety guard — block BEFORE anything reaches Gemini
+      // -----------------------------------------------------------------------
+
+      _assertIngredientsAreSafe(ingredients);
+
+      // -----------------------------------------------------------------------
+      // 1b. Get Gemini configuration from Firestore
       // -----------------------------------------------------------------------
 
       final config = await _getGeminiConfig();
@@ -74,6 +97,12 @@ class RecipeAIService {
       final recipes = _parseRecipes(
         generatedText,
       );
+
+      // -----------------------------------------------------------------------
+      // 4b. Safety re-check — defensive fallback against a bad AI response
+      // -----------------------------------------------------------------------
+
+      _assertRecipesAreSafe(recipes);
 
       // -----------------------------------------------------------------------
       // 5. Attach images from Firestore
@@ -142,7 +171,13 @@ class RecipeAIService {
 
     try {
       // -----------------------------------------------------------------------
-      // 1. Get the same Gemini configuration used by ingredient generation
+      // 1a. Safety guard — block BEFORE anything reaches Gemini
+      // -----------------------------------------------------------------------
+
+      _assertRequestTextIsSafe(request);
+
+      // -----------------------------------------------------------------------
+      // 1b. Get the same Gemini configuration used by ingredient generation
       // -----------------------------------------------------------------------
 
       final config = await _getGeminiConfig();
@@ -171,6 +206,12 @@ class RecipeAIService {
       final recipes = _parseRecipes(
         generatedText,
       );
+
+      // -----------------------------------------------------------------------
+      // 4b. Safety re-check — defensive fallback against a bad AI response
+      // -----------------------------------------------------------------------
+
+      _assertRecipesAreSafe(recipes);
 
       // -----------------------------------------------------------------------
       // 5. Attach images from Firestore
@@ -206,6 +247,213 @@ class RecipeAIService {
         'Could not reach TADKA AI right now. '
             'Please try again.',
       );
+    }
+  }
+
+  // ===========================================================================
+  // INGREDIENT SAFETY GUARD
+  // ===========================================================================
+  //
+  // TADKA AI must never produce a recipe — not even something as basic as
+  // plain roti — if the user has entered a non-food, hazardous, or
+  // inedible item (cleaning chemicals, pesticides, toiletries, fuels,
+  // adhesives, poisons, etc). These checks run BEFORE any network request
+  // to Gemini is made, so a single unsafe item blocks the entire
+  // generation rather than just being filtered out.
+  // ===========================================================================
+
+  static const String _unsafeIngredientMessage =
+      'Please check your ingredients. One or more items you entered '
+      "aren't food ingredients, so TADKA AI can't create a recipe with "
+      "them — not even a simple one. Remove anything that isn't edible "
+      'and try again.';
+
+  static final List<String> _unsafeKeywords = [
+    // Household cleaning products & brands
+    'phenyl',
+    'harpic',
+    'lizol',
+    'colin',
+    'domex',
+    'dettol',
+    'savlon',
+    'detergent',
+    'washing powder',
+    'dishwash',
+    'dishwashing liquid',
+    'dish soap',
+    'hand wash',
+    'toilet cleaner',
+    'bathroom cleaner',
+    'floor cleaner',
+    'glass cleaner',
+    'drain cleaner',
+    'surface cleaner',
+    'cleaning liquid',
+    'cleaning powder',
+    'cleaning spray',
+    'disinfectant',
+    'bleach',
+    'bleaching powder',
+    // Pest control
+    'rat poison',
+    'rat kill',
+    'ratol',
+    'cockroach spray',
+    'mosquito repellent',
+    'mosquito coil',
+    'insecticide',
+    'pesticide',
+    'insect spray',
+    'baygon',
+    'hit spray',
+    'all out',
+    'good knight',
+    'odonil',
+    'naphthalene',
+    'mothball',
+    'mothballs',
+    // Fuels & automotive fluids
+    'kerosene',
+    'petrol',
+    'diesel',
+    'engine oil',
+    'brake fluid',
+    'antifreeze',
+    'battery acid',
+    'battery',
+    // Paints, solvents & adhesives
+    'paint',
+    'thinner',
+    'turpentine',
+    'varnish',
+    'nail polish',
+    'nail polish remover',
+    'acetone',
+    'glue',
+    'fevicol',
+    'super glue',
+    'cement',
+    'plaster of paris',
+    'correction fluid',
+    'shoe polish',
+    'floor wax',
+    'car wax',
+    // Industrial / lab chemicals
+    'ammonia',
+    'caustic soda',
+    'chlorine',
+    'hydrochloric acid',
+    'sulphuric acid',
+    'sulfuric acid',
+    'formalin',
+    'methylated spirit',
+    'mercury',
+    // Poison & non-food materials
+    'poison',
+    'rat trap glue',
+    'plastic',
+    'rubber',
+    // Toiletries & personal care
+    'shampoo',
+    'conditioner',
+    'toothpaste',
+    'mouthwash',
+    'hand sanitizer',
+    'sanitizer',
+    'body wash',
+    'bathing soap',
+    'soap',
+    'perfume',
+    'deodorant',
+  ];
+
+  String? _matchUnsafeKeyword(
+      String value,
+      ) {
+    final normalized =
+    _normalizeForSafetyCheck(value);
+
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    final padded = ' $normalized ';
+
+    for (final keyword in _unsafeKeywords) {
+      if (padded.contains(' $keyword ')) {
+        return keyword;
+      }
+    }
+
+    return null;
+  }
+
+  String _normalizeForSafetyCheck(
+      String value,
+      ) {
+    var result = value.toLowerCase().trim();
+
+    result = result.replaceAll(
+      RegExp(r'[^a-z0-9]+'),
+      ' ',
+    );
+
+    result = result.replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
+
+    return result.trim();
+  }
+
+  void _assertIngredientsAreSafe(
+      List<String> ingredients,
+      ) {
+    for (final ingredient in ingredients) {
+      if (_matchUnsafeKeyword(ingredient) != null) {
+        throw const UnsafeIngredientException(
+          _unsafeIngredientMessage,
+        );
+      }
+    }
+  }
+
+  void _assertRequestTextIsSafe(
+      String request,
+      ) {
+    if (_matchUnsafeKeyword(request) != null) {
+      throw const UnsafeIngredientException(
+        _unsafeIngredientMessage,
+      );
+    }
+  }
+
+  void _assertRecipesAreSafe(
+      List<Recipe> recipes,
+      ) {
+    for (final recipe in recipes) {
+      if (_matchUnsafeKeyword(recipe.name) != null) {
+        throw const UnsafeIngredientException(
+          _unsafeIngredientMessage,
+        );
+      }
+
+      for (final ingredient in recipe.ingredients) {
+        if (_matchUnsafeKeyword(ingredient.name) != null) {
+          throw const UnsafeIngredientException(
+            _unsafeIngredientMessage,
+          );
+        }
+      }
+
+      for (final missing in recipe.missingIngredients) {
+        if (_matchUnsafeKeyword(missing) != null) {
+          throw const UnsafeIngredientException(
+            _unsafeIngredientMessage,
+          );
+        }
+      }
     }
   }
 
@@ -828,6 +1076,10 @@ RECIPE REQUIREMENTS:
 16. Do not return markdown.
 17. Return ONLY valid JSON.
 18. Do not wrap the JSON in markdown code blocks.
+19. Every ingredient in every recipe must be a genuine, edible,
+    food-grade item. Never include cleaning products, chemicals,
+    toiletries, industrial materials, or any non-food substance,
+    even if it appears in the user's ingredient list.
 
 IMPORTANT FOR DISH NAMES:
 
@@ -953,6 +1205,9 @@ IMPORTANT:
 - Return ONLY valid JSON.
 - Do not return markdown.
 - Do not wrap the JSON in ```.
+- Every ingredient must be a genuine, edible, food-grade item. Never
+  include cleaning products, chemicals, toiletries, industrial
+  materials, or any non-food substance.
 
 IMPORTANT FOR THE RECIPE NAME:
 
