@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "668330228215-cshja4o08a1vvr1s34oaqgaj8aq44ug4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tadkaai",
+            "certificate_hash": "67068c77cbf2831f9daa36e1ea0dda22c17a5532"
+          }
+        },
+        {
           "client_id": "668330228215-gja4s4nm3m1essmfnc27ji1gsd4af716.apps.googleusercontent.com",
           "client_type": 3
         }
