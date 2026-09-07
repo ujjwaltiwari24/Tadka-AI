@@ -14,11 +14,35 @@
       },
       "oauth_client": [
         {
+          "client_id": "668330228215-66l0ffjqmv1mv56114vtmfm485d2cikr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tadkaai",
+            "certificate_hash": "7620c5b59dc85e8cfce3c79abecba80cf8d6be2a"
+          }
+        },
+        {
+          "client_id": "668330228215-ag7t6v7lifdm52q5rnql5a82e1k1ukv2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tadkaai",
+            "certificate_hash": "229f7642aeb64c60a8637ac135a07beafa2f502e"
+          }
+        },
+        {
           "client_id": "668330228215-cshja4o08a1vvr1s34oaqgaj8aq44ug4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.tadkaai",
             "certificate_hash": "67068c77cbf2831f9daa36e1ea0dda22c17a5532"
+          }
+        },
+        {
+          "client_id": "668330228215-haj8remao9jqqo71o663jnpitlk8qbq7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tadkaai",
+            "certificate_hash": "7ac67a1b28ae883de81f72e3633b7650ab261218"
           }
         },
         {

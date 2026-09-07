@@ -16,7 +16,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   // TADKA AI Banner Ad Unit ID
   static const String _bannerAdUnitId =
-      'ca-app-pub-8698720966428005/5557703106';
+      'ca-app-pub-8115235789134813/3820979404';
 
   @override
   void initState() {

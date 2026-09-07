@@ -11,7 +11,7 @@ class RewardedAdService {
   // Google test rewarded ad unit for Android development.
   // Replace ONLY when preparing the production release.
   static const String testAdUnitId =
-      'ca-app-pub-8698720966428005/7178509171';
+      'ca-app-pub-8115235789134813/6255571053';
 
   RewardedAd? _rewardedAd;
   bool _isLoading = false;
