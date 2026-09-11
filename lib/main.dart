@@ -10,7 +10,7 @@ import 'app/theme/app_theme.dart';
 // CURRENT APP VERSION
 // ============================================================================
 
-const int currentVersion = 1;
+const int currentVersion = 2;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

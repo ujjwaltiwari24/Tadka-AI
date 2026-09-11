@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../recipes/recipe.dart';
 import '../recipes/recipe_results_screen.dart';
 
@@ -18,11 +19,29 @@ class StartCookingScreen extends StatefulWidget {
 }
 
 class _StartCookingScreenState extends State<StartCookingScreen> {
+  // ---------------------------------------------------------------------
+  // AD UNIT IDS
+  // ---------------------------------------------------------------------
+  static const String _bannerAdUnitId =
+      'ca-app-pub-8115235789134813/3760343619';
+  static const String _interstitialAdUnitId =
+      'ca-app-pub-8115235789134813/1381592283';
+
   int _currentStep = 0;
   Timer? _timer;
   int _remainingSeconds = 0;
   bool _timerRunning = false;
   bool _stepCompleted = false;
+
+  // Banner ad — shown for the whole duration the user is on this screen
+  // (i.e. the entire time they're actively cooking through the steps).
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
+
+  // Interstitial ad — preloaded as soon as cooking starts, then shown once
+  // the user finishes the recipe.
+  InterstitialAd? _interstitialAd;
+  bool _isInterstitialReady = false;
 
   Recipe get recipe => widget.recipe;
 
@@ -35,14 +54,95 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _loadBannerAd();
+    _loadInterstitialAd();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _bannerAd?.dispose();
+    _interstitialAd?.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
+
+  // ---------------------------------------------------------------------
+  // ADS
+  // ---------------------------------------------------------------------
+
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+          setState(() => _isBannerAdReady = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (mounted) {
+            setState(() => _isBannerAdReady = false);
+          }
+        },
+      ),
+    )..load();
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _isInterstitialReady = true;
+        },
+        onAdFailedToLoad: (error) {
+          _interstitialAd = null;
+          _isInterstitialReady = false;
+        },
+      ),
+    );
+  }
+
+  /// Shows the interstitial (if ready) once cooking is finished, then runs
+  /// [onComplete] either after the ad is dismissed or immediately if no ad
+  /// is available.
+  void _showInterstitialThenComplete(VoidCallback onComplete) {
+    final ad = _interstitialAd;
+
+    if (ad == null || !_isInterstitialReady) {
+      onComplete();
+      return;
+    }
+
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _interstitialAd = null;
+        _isInterstitialReady = false;
+        onComplete();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _interstitialAd = null;
+        _isInterstitialReady = false;
+        onComplete();
+      },
+    );
+
+    ad.show();
+  }
+
+  // ---------------------------------------------------------------------
+  // STEP NAVIGATION
+  // ---------------------------------------------------------------------
 
   void _nextStep() {
     HapticFeedback.mediumImpact();
@@ -376,6 +476,13 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
                         ],
                       ),
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withValues(alpha: 0.35),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.check_rounded,
@@ -407,8 +514,13 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
                     height: 54,
                     child: FilledButton(
                       onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
+                        // Cooking has just finished — show the interstitial
+                        // ad, then leave the cooking flow.
+                        _showInterstitialThenComplete(() {
+                          if (!mounted) return;
+                          Navigator.pop(context); // close completion sheet
+                          Navigator.pop(context); // exit cooking screen
+                        });
                       },
                       child: const Text(
                         'Finish Cooking',
@@ -439,6 +551,7 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
       appBar: AppBar(
         backgroundColor: colors.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
         titleSpacing: 4,
         leading: IconButton(
           tooltip: 'Exit cooking',
@@ -448,12 +561,13 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'START COOKING',
               style: TextStyle(
+                color: colors.primary,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
+                letterSpacing: 1.4,
               ),
             ),
             Text(
@@ -498,24 +612,39 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      '${_currentStep + 1} / ${steps.length}',
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        '${_currentStep + 1} / ${steps.length}',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 9),
+                const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6,
-                    backgroundColor:
-                    colors.primary.withValues(alpha: 0.10),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: progress),
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) => LinearProgressIndicator(
+                      value: value,
+                      minHeight: 7,
+                      backgroundColor: colors.primary.withValues(alpha: 0.10),
+                      valueColor: AlwaysStoppedAnimation(colors.primary),
+                    ),
                   ),
                 ),
               ],
@@ -713,11 +842,23 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
           ),
 
           // ================================================================
+          // BANNER AD — visible for the whole time the user is cooking
+          // ================================================================
+          if (_isBannerAdReady && _bannerAd != null)
+            Container(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              alignment: Alignment.center,
+              color: colors.surface,
+              child: AdWidget(ad: _bannerAd!),
+            ),
+
+          // ================================================================
           // BOTTOM COOKING CONTROLS
           // ================================================================
 
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
             decoration: BoxDecoration(
               color: colors.surface,
               border: Border(
@@ -729,11 +870,11 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
                 BoxShadow(
                   color: Colors.black.withValues(
                     alpha: theme.brightness == Brightness.dark
-                        ? 0.18
-                        : 0.04,
+                        ? 0.22
+                        : 0.06,
                   ),
-                  blurRadius: 20,
-                  offset: const Offset(0, -6),
+                  blurRadius: 24,
+                  offset: const Offset(0, -8),
                 ),
               ],
             ),
@@ -742,15 +883,19 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 54,
-                    height: 54,
+                    width: 56,
+                    height: 58,
                     child: OutlinedButton(
                       onPressed:
                       _currentStep == 0 ? null : _previousStep,
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
+                        side: BorderSide(
+                          color: colors.outline.withValues(alpha: 0.25),
+                          width: 1.4,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(17),
+                          borderRadius: BorderRadius.circular(18),
                         ),
                       ),
                       child: const Icon(
@@ -761,34 +906,62 @@ class _StartCookingScreenState extends State<StartCookingScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: SizedBox(
-                      height: 54,
-                      child: FilledButton(
-                        onPressed: _nextStep,
-                        style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(17),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _currentStep == steps.length - 1
-                                  ? 'Finish Cooking'
-                                  : 'Next Step',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              _currentStep == steps.length - 1
-                                  ? Icons.check_rounded
-                                  : Icons.arrow_forward_rounded,
-                              size: 19,
+                      height: 58,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withValues(alpha: 0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
                             ),
                           ],
+                        ),
+                        child: Material(
+                          borderRadius: BorderRadius.circular(18),
+                          clipBehavior: Clip.antiAlias,
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  colors.primary,
+                                  colors.primary.withValues(alpha: 0.82),
+                                ],
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: _nextStep,
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _currentStep == steps.length - 1
+                                          ? 'Finish Cooking'
+                                          : 'Next Step',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      _currentStep == steps.length - 1
+                                          ? Icons.check_rounded
+                                          : Icons.arrow_forward_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -906,72 +1079,84 @@ class _HeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: AspectRatio(
-        aspectRatio: 1.55,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest,
-                child: const Icon(
-                  Icons.restaurant_rounded,
-                  size: 54,
-                ),
-              ),
-              loadingBuilder: (
-                  context,
-                  child,
-                  progress,
-                  ) {
-                if (progress == null) return child;
-
-                return Container(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: AspectRatio(
+          aspectRatio: 1.55,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
                   color: Theme.of(context)
                       .colorScheme
                       .surfaceContainerHighest,
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
+                  child: const Icon(
+                    Icons.restaurant_rounded,
+                    size: 54,
                   ),
-                );
-              },
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.30),
-                  ],
+                ),
+                loadingBuilder: (
+                    context,
+                    child,
+                    progress,
+                    ) {
+                  if (progress == null) return child;
+
+                  return Container(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.36),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 14,
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 14,
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1001,6 +1186,13 @@ class _GlassCard extends StatelessWidget {
           color: accent?.withValues(alpha: 0.18) ??
               colors.outline.withValues(alpha: 0.09),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
