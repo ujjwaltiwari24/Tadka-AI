@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'app/app.dart';
 import 'app/theme/app_theme.dart';
@@ -9,16 +10,48 @@ import 'app/theme/app_theme.dart';
 // ============================================================================
 // CURRENT APP VERSION
 // ============================================================================
+//
+// IMPORTANT:
+// Keep this value synchronized with the app's versionCode.
+//
+// Example:
+// pubspec.yaml -> version: 1.0.1+12
+// currentVersion -> 12
+//
+// Firebase:
+// appVersion/latestVersion -> 12
+//
+// When you release 1.0.2+13:
+// currentVersion -> 13
+// Firebase latestVersion -> 13
+// ============================================================================
 
-const int currentVersion = 2;
+const int currentVersion = 12;
+
+// ============================================================================
+// PLAY STORE URL
+// ============================================================================
+
+const String playStoreUrl =
+    'https://play.google.com/store/apps/details?id=com.tadkaai';
+
+// ============================================================================
+// MAIN
+// ============================================================================
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase
+  // ==========================================================================
+  // FIREBASE
+  // ==========================================================================
+
   await Firebase.initializeApp();
 
-  // Google Mobile Ads
+  // ==========================================================================
+  // GOOGLE MOBILE ADS
+  // ==========================================================================
+
   await MobileAds.instance.initialize();
 
   // ==========================================================================
@@ -55,6 +88,8 @@ Future<void> main() async {
       debugPrint('===================================');
     }
   } catch (e) {
+    // If the version check fails, do NOT block the user
+    // from opening the app.
     debugPrint('VERSION CHECK ERROR: $e');
   }
 
@@ -125,21 +160,18 @@ class UpdateRequiredScreen extends StatelessWidget {
                 horizontal: 28,
               ),
               child: Column(
-                mainAxisAlignment:
-                MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ========================================================
+                  // ============================================================
                   // ICON
-                  // ========================================================
+                  // ============================================================
 
                   Container(
                     width: 88,
                     height: 88,
                     decoration: BoxDecoration(
-                      borderRadius:
-                      BorderRadius.circular(28),
-                      gradient:
-                      const LinearGradient(
+                      borderRadius: BorderRadius.circular(28),
+                      gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
@@ -149,14 +181,11 @@ class UpdateRequiredScreen extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(
-                            0xFFFF7A00,
-                          ).withValues(
+                          color: const Color(0xFFFF7A00).withValues(
                             alpha: 0.20,
                           ),
                           blurRadius: 30,
-                          offset:
-                          const Offset(0, 12),
+                          offset: const Offset(0, 12),
                         ),
                       ],
                     ),
@@ -169,9 +198,9 @@ class UpdateRequiredScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // ========================================================
+                  // ============================================================
                   // TITLE
-                  // ========================================================
+                  // ============================================================
 
                   const Text(
                     'Update Required',
@@ -185,9 +214,9 @@ class UpdateRequiredScreen extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // ========================================================
+                  // ============================================================
                   // DESCRIPTION
-                  // ========================================================
+                  // ============================================================
 
                   const Text(
                     'A newer version of TADKA AI '
@@ -216,35 +245,30 @@ class UpdateRequiredScreen extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  // ========================================================
+                  // ============================================================
                   // VERSION CARD
-                  // ========================================================
+                  // ============================================================
 
                   Container(
                     width: double.infinity,
-                    padding:
-                    const EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                       vertical: 17,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                      BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: Colors.black
-                            .withValues(
+                        color: Colors.black.withValues(
                           alpha: 0.06,
                         ),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black
-                              .withValues(
+                          color: Colors.black.withValues(
                             alpha: 0.035,
                           ),
                           blurRadius: 20,
-                          offset:
-                          const Offset(0, 8),
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
@@ -253,16 +277,14 @@ class UpdateRequiredScreen extends StatelessWidget {
                         Expanded(
                           child: _VersionItem(
                             title: 'Current',
-                            value:
-                            'v$currentVersion',
+                            value: 'v$currentVersion',
                           ),
                         ),
 
                         Container(
                           width: 1,
                           height: 36,
-                          color: Colors.black
-                              .withValues(
+                          color: Colors.black.withValues(
                             alpha: 0.07,
                           ),
                         ),
@@ -270,8 +292,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                         Expanded(
                           child: _VersionItem(
                             title: 'Latest',
-                            value:
-                            latestVersion != null
+                            value: latestVersion != null
                                 ? 'v$latestVersion'
                                 : '—',
                           ),
@@ -282,37 +303,27 @@ class UpdateRequiredScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // ========================================================
+                  // ============================================================
                   // UPDATE BUTTON
-                  // ========================================================
+                  // ============================================================
 
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
                       onPressed: () {
-                        _showComingSoon(context);
+                        _openPlayStore(context);
                       },
-                      style:
-                      ElevatedButton.styleFrom(
-                        backgroundColor:
-                        const Color(
-                          0xFFFF7A00,
-                        ),
-                        foregroundColor:
-                        Colors.white,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF7A00),
+                        foregroundColor: Colors.white,
                         elevation: 0,
-                        shape:
-                        RoundedRectangleBorder(
-                          borderRadius:
-                          BorderRadius.circular(
-                            17,
-                          ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(17),
                         ),
                       ),
                       child: const Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.download_rounded,
@@ -323,8 +334,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                             'Update TADKA AI',
                             style: TextStyle(
                               fontSize: 15,
-                              fontWeight:
-                              FontWeight.w800,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -335,8 +345,8 @@ class UpdateRequiredScreen extends StatelessWidget {
                   const SizedBox(height: 15),
 
                   const Text(
-                    'The latest version will be '
-                        'available soon.',
+                    'The latest version is now available '
+                        'on Google Play.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF999993),
@@ -353,53 +363,46 @@ class UpdateRequiredScreen extends StatelessWidget {
   }
 
   // ==========================================================================
-  // TEMPORARY UPDATE MESSAGE
+  // OPEN PLAY STORE
   // ==========================================================================
 
-  void _showComingSoon(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius:
-            BorderRadius.circular(22),
-          ),
-          title: const Row(
-            children: [
-              Icon(
-                Icons.rocket_launch_rounded,
-                color: Color(0xFFFF7A00),
+  Future<void> _openPlayStore(BuildContext context) async {
+    final uri = Uri.parse(playStoreUrl);
+
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Could not open Google Play Store. Please try again.',
               ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Coming Soon',
-                  style: TextStyle(
-                    fontWeight:
-                    FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'TADKA AI is not available on '
-                'the Play Store yet.\n\n'
-                'The latest version will be '
-                'available once the app is published.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Got it'),
+              behavior: SnackBarBehavior.floating,
             ),
-          ],
+          );
+      }
+    } catch (e) {
+      debugPrint('PLAY STORE OPEN ERROR: $e');
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not open Google Play Store. Please try again.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
-      },
-    );
+    }
   }
 }
 
