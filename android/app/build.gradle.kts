@@ -57,9 +57,19 @@ android {
         release {
             // Apply release signing config explicitly
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+
+            // Enable R8 code shrinking, optimization and obfuscation
+            isMinifyEnabled = true
+
+            // Remove unused Android resources
+            isShrinkResources = true
+
+            // Use Google's optimized R8 configuration
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt")
+            )
         }
+
         debug {
             signingConfig = signingConfigs.getByName("debug")
         }

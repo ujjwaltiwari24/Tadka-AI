@@ -20,57 +20,60 @@ class SearchRecipeScreen extends StatefulWidget {
   });
 
   @override
-  State<SearchRecipeScreen> createState() =>
-      _SearchRecipeScreenState();
+  State<SearchRecipeScreen> createState() => _SearchRecipeScreenState();
 }
 
-class _SearchRecipeScreenState
-    extends State<SearchRecipeScreen>
+class _SearchRecipeScreenState extends State<SearchRecipeScreen>
     with SingleTickerProviderStateMixin {
   // ==========================================================================
-  // CONTROLLERS
+  // CONTROLLERS & FOCUS
   // ==========================================================================
 
-  final TextEditingController _controller =
-  TextEditingController();
-
-  final FocusNode _focusNode =
-  FocusNode();
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   // ==========================================================================
-  // STATE
+  // STATE & ANIMATION
   // ==========================================================================
 
   bool _loading = false;
-
   int _messageIndex = 0;
 
-  late final AnimationController
-  _animationController;
+  late final AnimationController _animationController;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _rotationAnimation;
 
   // ==========================================================================
-  // LOADING MESSAGES
+  // LOADING MESSAGES & ICONS
   // ==========================================================================
 
   final List<String> _loadingMessages = [
-    'Understanding what you want to cook...',
-    'Building the perfect ingredient list...',
-    'Balancing flavors and spices...',
-    'Writing your recipe...',
-    'Adding the finishing tadka...',
+    'Understanding your culinary craving...',
+    'Selecting authentic ingredients & spices...',
+    'Balancing secret flavors and proportions...',
+    'Formatting step-by-step cooking instructions...',
+    'Adding the final golden TADKA touch...',
+  ];
+
+  final List<IconData> _loadingIcons = [
+    Icons.auto_awesome_rounded,
+    Icons.kitchen_rounded,
+    Icons.local_fire_department_rounded,
+    Icons.menu_book_rounded,
+    Icons.whatshot_rounded,
   ];
 
   // ==========================================================================
-  // EXAMPLES
+  // EXAMPLES WITH CATEGORIES
   // ==========================================================================
 
-  final List<String> _examples = [
-    'Paneer Butter Masala',
-    'Aloo Paratha',
-    'Restaurant style biryani',
-    'Easy pasta for dinner',
-    'Something spicy with paneer',
-    'Quick breakfast',
+  final List<Map<String, dynamic>> _examples = [
+    {'title': 'Paneer Butter Masala', 'icon': Icons.restaurant_rounded},
+    {'title': 'Aloo Paratha', 'icon': Icons.flatware_rounded},
+    {'title': 'Restaurant Style Biryani', 'icon': Icons.local_fire_department_rounded},
+    {'title': 'Easy Pasta for Dinner', 'icon': Icons.dinner_dining_rounded},
+    {'title': 'Spicy Paneer Starter', 'icon': Icons.bolt_rounded},
+    {'title': 'Quick Healthy Breakfast', 'icon': Icons.free_breakfast_rounded},
   ];
 
   // ==========================================================================
@@ -81,44 +84,45 @@ class _SearchRecipeScreenState
   void initState() {
     super.initState();
 
-    _animationController =
-    AnimationController(
+    _animationController = AnimationController(
       vsync: this,
-      duration:
-      const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
 
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) {
+    _scaleAnimation = Tween<double>(
+      begin: 0.92,
+      end: 1.08,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _rotationAnimation = Tween<double>(
+      begin: -0.05,
+      end: 0.05,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final initialDish =
-      widget.initialDish?.trim();
+      final initialDish = widget.initialDish?.trim();
 
-      // ================================================================
-      // OPENED FROM RECENTLY ADDED
-      // ================================================================
-
-      if (initialDish != null &&
-          initialDish.isNotEmpty) {
+      if (initialDish != null && initialDish.isNotEmpty) {
         _controller.text = initialDish;
+        _controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: initialDish.length),
+        );
 
-        _controller.selection =
-            TextSelection.fromPosition(
-              TextPosition(
-                offset: initialDish.length,
-              ),
-            );
-
-        // Automatically generate the recipe.
         _generateRecipe();
-
         return;
       }
-
-      // ================================================================
-      // NORMAL SEARCH SCREEN
-      // ================================================================
 
       _focusNode.requestFocus();
     });
@@ -133,7 +137,6 @@ class _SearchRecipeScreenState
     _controller.dispose();
     _focusNode.dispose();
     _animationController.dispose();
-
     super.dispose();
   }
 
@@ -144,8 +147,7 @@ class _SearchRecipeScreenState
   Future<void> _generateRecipe() async {
     if (_loading) return;
 
-    final query =
-    _controller.text.trim();
+    final query = _controller.text.trim();
 
     if (query.isEmpty) {
       _focusNode.requestFocus();
@@ -153,20 +155,25 @@ class _SearchRecipeScreenState
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Tell me what you want to cook.',
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('Please enter a dish or craving to cook.'),
+              ],
             ),
-            behavior:
-            SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
         );
-
       return;
     }
 
     HapticFeedback.mediumImpact();
-
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -177,29 +184,18 @@ class _SearchRecipeScreenState
     _startLoadingMessages();
 
     try {
-      // ================================================================
-      // AI RECIPE GENERATION
-      // ================================================================
-
-      final recipes =
-      await RecipeAIService.instance
-          .generateRecipeByName(query);
+      final recipes = await RecipeAIService.instance.generateRecipeByName(query);
 
       if (!mounted) return;
 
       _stopLoadingMessages();
 
-      // ================================================================
-      // OPEN RESULTS
-      // ================================================================
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              RecipeResultsScreen(
-                recipes: recipes,
-              ),
+          builder: (_) => RecipeResultsScreen(
+            recipes: recipes,
+          ),
         ),
       );
     } catch (error) {
@@ -216,29 +212,17 @@ class _SearchRecipeScreenState
         ..showSnackBar(
           SnackBar(
             content: Text(
-              error
-                  .toString()
-                  .replaceFirst(
-                'RecipeAIException: ',
-                '',
-              ),
+              error.toString().replaceFirst('RecipeAIException: ', ''),
             ),
-            behavior:
-            SnackBarBehavior.floating,
-            duration:
-            const Duration(seconds: 4),
-            margin:
-            const EdgeInsets.all(16),
-            shape:
-            RoundedRectangleBorder(
-              borderRadius:
-              BorderRadius.circular(16),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            action:
-            SnackBarAction(
+            action: SnackBarAction(
               label: 'RETRY',
-              onPressed:
-              _generateRecipe,
+              onPressed: _generateRecipe,
             ),
           ),
         );
@@ -251,30 +235,21 @@ class _SearchRecipeScreenState
 
   void _startLoadingMessages() {
     Future.doWhile(() async {
-      await Future.delayed(
-        const Duration(
-          milliseconds: 2200,
-        ),
-      );
+      await Future.delayed(const Duration(milliseconds: 2400));
 
       if (!mounted || !_loading) {
         return false;
       }
 
       setState(() {
-        _messageIndex =
-            (_messageIndex + 1) %
-                _loadingMessages.length;
+        _messageIndex = (_messageIndex + 1) % _loadingMessages.length;
       });
 
       return _loading;
     });
   }
 
-  void _stopLoadingMessages() {
-    // The loading loop automatically
-    // stops when _loading becomes false.
-  }
+  void _stopLoadingMessages() {}
 
   // ==========================================================================
   // EXAMPLE SELECTION
@@ -285,16 +260,62 @@ class _SearchRecipeScreenState
 
     setState(() {
       _controller.text = value;
-
-      _controller.selection =
-          TextSelection.fromPosition(
-            TextPosition(
-              offset: value.length,
-            ),
-          );
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: value.length),
+      );
     });
 
     _focusNode.requestFocus();
+  }
+
+  // ==========================================================================
+  // LEAVE DIALOG
+  // ==========================================================================
+
+  Future<bool> _showLeaveDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final colors = Theme.of(context).colorScheme;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Stop recipe generation?',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+          content: const Text(
+            'TADKA AI is crafting your recipe. If you go back now, this generation will be discarded.',
+            style: TextStyle(fontSize: 13.5, height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'KEEP WAITING',
+                style: TextStyle(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
   }
 
   // ==========================================================================
@@ -305,19 +326,19 @@ class _SearchRecipeScreenState
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !_loading,
-      onPopInvokedWithResult:
-          (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
         if (_loading) {
-          setState(() {
-            _loading = false;
-          });
+          final leave = await _showLeaveDialog();
+          if (leave && mounted) {
+            setState(() {
+              _loading = false;
+            });
+          }
         }
       },
-      child: _loading
-          ? _buildLoadingScreen(context)
-          : _buildSearchScreen(context),
+      child: _loading ? _buildLoadingScreen(context) : _buildSearchScreen(context),
     );
   }
 
@@ -325,191 +346,205 @@ class _SearchRecipeScreenState
   // SEARCH SCREEN
   // ==========================================================================
 
-  Widget _buildSearchScreen(
-      BuildContext context,
-      ) {
-    final theme =
-    Theme.of(context);
-
-    final colors =
-        theme.colorScheme;
+  Widget _buildSearchScreen(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor:
-      theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
         leading: IconButton(
           tooltip: 'Back',
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-          ),
+          icon: const Icon(Icons.arrow_back_rounded, size: 20),
           onPressed: () {
             HapticFeedback.selectionClick();
-
             Navigator.pop(context);
           },
         ),
         title: const Text(
-          'Create a recipe',
+          'Create a Recipe',
           style: TextStyle(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
+            fontSize: 17,
           ),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics:
-          const BouncingScrollPhysics(),
-          padding:
-          const EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            30,
-          ),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============================================================
-              // TITLE
-              // ============================================================
-
-              Text(
-                'What do you want\nto cook?',
-                style: TextStyle(
-                  color:
-                  colors.onSurface,
-                  fontSize: 31,
-                  height: 1.08,
-                  fontWeight:
-                  FontWeight.w900,
-                  letterSpacing: -0.8,
+              // Title & Subtitle Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: colors.primary, size: 12),
+                    const SizedBox(width: 5),
+                    Text(
+                      'AI RECIPE STUDIO',
+                      style: TextStyle(
+                        color: colors.primary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 10),
 
               Text(
-                'Name a dish, describe a craving, '
-                    'or simply tell TADKA what you are '
-                    'in the mood for.',
+                'What do you want\nto cook today?',
                 style: TextStyle(
-                  color:
-                  colors.onSurfaceVariant,
-                  fontSize: 14,
-                  height: 1.45,
+                  color: colors.onSurface,
+                  fontSize: 28,
+                  height: 1.1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.7,
                 ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                'Name a dish, describe a craving, or simply tell TADKA AI what flavor profile you are in the mood for.',
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12.5,
+                  height: 1.45,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // Search Input Box
+              _SearchInput(
+                controller: _controller,
+                focusNode: _focusNode,
+                onSubmitted: (_) => _generateRecipe(),
+                onGenerate: _generateRecipe,
               ),
 
               const SizedBox(height: 26),
 
-              // ============================================================
-              // SEARCH INPUT
-              // ============================================================
-
-              _SearchInput(
-                controller: _controller,
-                focusNode: _focusNode,
-                onSubmitted: (_) =>
-                    _generateRecipe(),
-                onGenerate:
-                _generateRecipe,
-              ),
-
-              const SizedBox(height: 28),
-
-              // ============================================================
-              // EXAMPLES
-              // ============================================================
-
+              // Try Asking Header
               Row(
                 children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    color:
-                    colors.primary,
-                    size: 18,
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      color: colors.primary,
+                      size: 15,
+                    ),
                   ),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 10),
                   Text(
-                    'Try asking for',
+                    'Popular Culinary Ideas',
                     style: TextStyle(
-                      color:
-                      colors.onSurface,
-                      fontSize: 15,
-                      fontWeight:
-                      FontWeight.w800,
+                      color: colors.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 13),
+              const SizedBox(height: 12),
 
+              // Example Pills
               Wrap(
-                spacing: 9,
+                spacing: 8,
                 runSpacing: 9,
-                children:
-                _examples.map(
-                      (example) {
-                    return _ExampleChip(
-                      text: example,
-                      onTap: () =>
-                          _selectExample(
-                            example,
-                          ),
-                    );
-                  },
-                ).toList(),
+                children: _examples.map((example) {
+                  return _ExampleChip(
+                    text: example['title'] as String,
+                    icon: example['icon'] as IconData,
+                    onTap: () => _selectExample(example['title'] as String),
+                  );
+                }).toList(),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 28),
 
-              // ============================================================
-              // TIP
-              // ============================================================
-
+              // Colorful AI Feature Banner
               Container(
-                padding:
-                const EdgeInsets.all(16),
-                decoration:
-                BoxDecoration(
-                  color:
-                  colors.primary
-                      .withValues(
-                    alpha: 0.06,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colors.primary.withValues(alpha: 0.10),
+                      colors.primary.withValues(alpha: 0.03),
+                    ],
                   ),
-                  borderRadius:
-                  BorderRadius.circular(
-                    18,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: colors.primary.withValues(alpha: 0.18),
                   ),
                 ),
                 child: Row(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons
-                          .lightbulb_outline_rounded,
-                      color:
-                      colors.primary,
-                      size: 21,
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.lightbulb_outline_rounded,
+                        color: colors.primary,
+                        size: 20,
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        "You don't need to know the exact "
-                            'recipe name. Try something like '
-                            '"something quick with paneer".',
-                        style: TextStyle(
-                          color: colors
-                              .onSurfaceVariant,
-                          fontSize: 12,
-                          height: 1.45,
-                          fontWeight:
-                          FontWeight.w500,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CHEF\'S TIP',
+                            style: TextStyle(
+                              color: colors.primary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.9,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "You don't need exact recipe titles. Try searching natural prompts like \"something fast with paneer\" or \"creamy soup without dairy\".",
+                            style: TextStyle(
+                              color: colors.onSurfaceVariant,
+                              fontSize: 11.5,
+                              height: 1.4,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -526,206 +561,232 @@ class _SearchRecipeScreenState
   // LOADING SCREEN
   // ==========================================================================
 
-  Widget _buildLoadingScreen(
-      BuildContext context,
-      ) {
-    final theme =
-    Theme.of(context);
-
-    final colors =
-        theme.colorScheme;
+  Widget _buildLoadingScreen(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final primary = colors.primary;
 
     return Scaffold(
-      backgroundColor:
-      theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            // ================================================================
-            // HEADER
-            // ================================================================
-
+            // Top Bar
             Padding(
-              padding:
-              const EdgeInsets.fromLTRB(
-                14,
-                10,
-                20,
-                0,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _loading = false;
-                      });
-                    },
-                    icon: const Icon(
-                      Icons.close_rounded,
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  const Expanded(
-                    child: Text(
-                      'Creating your recipe',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight:
-                        FontWeight.w800,
+                  Material(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        final leave = await _showLeaveDialog();
+                        if (leave && mounted) {
+                          setState(() {
+                            _loading = false;
+                          });
+                        }
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.outline.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
-
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    color:
-                    colors.primary,
-                    size: 20,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Creating Recipe',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 13,
+                          color: primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'AI',
+                          style: TextStyle(
+                            color: primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // ================================================================
-            // LOADING CONTENT
-            // ================================================================
-
+            // Loading Body
             Expanded(
               child: Center(
                 child: Padding(
-                  padding:
-                  const EdgeInsets.all(24),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
-                    mainAxisSize:
-                    MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Animated Flame Sphere
                       AnimatedBuilder(
-                        animation:
-                        _animationController,
-                        builder:
-                            (context, child) {
-                          final scale =
-                              0.94 +
-                                  (_animationController
-                                      .value *
-                                      0.10);
-
-                          return Transform.scale(
-                            scale: scale,
-                            child: child,
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _rotationAnimation.value,
+                            child: Transform.scale(
+                              scale: _scaleAnimation.value,
+                              child: child,
+                            ),
                           );
                         },
                         child: Container(
-                          width: 112,
-                          height: 112,
-                          decoration:
-                          BoxDecoration(
-                            color:
-                            colors.primary,
-                            shape:
-                            BoxShape.circle,
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                primary,
+                                Color.lerp(primary, Colors.black, 0.22) ?? primary,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: colors
-                                    .primary
-                                    .withValues(
-                                  alpha: 0.25,
-                                ),
-                                blurRadius: 35,
+                                color: primary.withValues(alpha: 0.32),
+                                blurRadius: 32,
+                                spreadRadius: 3,
                               ),
                             ],
                           ),
-                          child:
-                          const Icon(
-                            Icons
-                                .local_fire_department_rounded,
-                            color:
-                            Colors.white,
-                            size: 55,
+                          child: const Icon(
+                            Icons.local_fire_department_rounded,
+                            color: Colors.white,
+                            size: 54,
                           ),
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 28,
-                      ),
-
-                      const Text(
-                        'TADKA AI',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight:
-                          FontWeight.w900,
-                          letterSpacing: 1,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 8,
-                      ),
-
-                      AnimatedSwitcher(
-                        duration:
-                        const Duration(
-                          milliseconds: 300,
-                        ),
-                        child: Text(
-                          _loadingMessages[
-                          _messageIndex],
-                          key: ValueKey(
-                            _messageIndex,
-                          ),
-                          textAlign:
-                          TextAlign.center,
-                          style: TextStyle(
-                            color: colors
-                                .onSurfaceVariant,
-                            fontSize: 13,
-                            fontWeight:
-                            FontWeight.w600,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 25,
-                      ),
-
-                      SizedBox(
-                        width: 160,
-                        child:
-                        LinearProgressIndicator(
-                          minHeight: 4,
-                          borderRadius:
-                          BorderRadius
-                              .circular(
-                            10,
-                          ),
-                          color:
-                          colors.primary,
-                          backgroundColor:
-                          colors.primary
-                              .withValues(
-                            alpha: 0.10,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 22,
-                      ),
+                      const SizedBox(height: 24),
 
                       Text(
-                        'Almost there...',
+                        'TADKA AI',
                         style: TextStyle(
-                          color: colors
-                              .onSurfaceVariant
-                              .withValues(
-                            alpha: 0.7,
+                          color: colors.onSurface,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        'Searching recipe for "${_controller.text.trim()}"',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Animated Status Card
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        child: Container(
+                          key: ValueKey(_messageIndex),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
                           ),
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: primary.withValues(alpha: 0.16),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: primary.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  _loadingIcons[_messageIndex],
+                                  color: primary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _loadingMessages[_messageIndex],
+                                  style: TextStyle(
+                                    color: colors.onSurface,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      SizedBox(
+                        width: 150,
+                        child: LinearProgressIndicator(
+                          minHeight: 4,
+                          borderRadius: BorderRadius.circular(10),
+                          color: primary,
+                          backgroundColor: primary.withValues(alpha: 0.12),
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      Text(
+                        'Preparing step-by-step cooking timeline...',
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant.withValues(alpha: 0.7),
                           fontSize: 11,
                         ),
                       ),
@@ -745,8 +806,7 @@ class _SearchRecipeScreenState
 // SEARCH INPUT
 // ============================================================================
 
-class _SearchInput
-    extends StatelessWidget {
+class _SearchInput extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final ValueChanged<String> onSubmitted;
@@ -761,119 +821,121 @@ class _SearchInput
 
   @override
   Widget build(BuildContext context) {
-    final colors =
-        Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius:
-        BorderRadius.circular(19),
-        boxShadow: [
-          BoxShadow(
-            color:
-            Colors.black.withValues(
-              alpha: 0.04,
-            ),
-            blurRadius: 20,
-            offset:
-            const Offset(0, 7),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        textInputAction:
-        TextInputAction.done,
-        textCapitalization:
-        TextCapitalization.sentences,
-        minLines: 1,
-        maxLines: 3,
-        onSubmitted: onSubmitted,
-        decoration: InputDecoration(
-          hintText:
-          'e.g. Paneer Butter Masala',
-          prefixIcon: const Padding(
-            padding:
-            EdgeInsets.only(
-              left: 4,
-              right: 2,
-            ),
-            child: Icon(
-              Icons.search_rounded,
-            ),
-          ),
-          suffixIcon: Padding(
-            padding:
-            const EdgeInsets.only(
-              right: 6,
-              top: 6,
-              bottom: 6,
-            ),
-            child: Material(
-              color: colors.primary,
-              borderRadius:
-              BorderRadius.circular(
-                13,
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final hasText = value.text.isNotEmpty;
+
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: colors.primary.withValues(alpha: 0.06),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
               ),
-              child: InkWell(
-                onTap: onGenerate,
-                borderRadius:
-                BorderRadius.circular(
-                  13,
-                ),
-                child: const SizedBox(
-                  width: 45,
-                  child: Icon(
-                    Icons
-                        .arrow_forward_rounded,
-                    color:
-                    Colors.white,
+            ],
+          ),
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textInputAction: TextInputAction.go,
+            textCapitalization: TextCapitalization.sentences,
+            minLines: 1,
+            maxLines: 3,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+            onSubmitted: onSubmitted,
+            decoration: InputDecoration(
+              hintText: 'e.g. Paneer Butter Masala, Creamy Pasta...',
+              hintStyle: TextStyle(
+                color: colors.onSurfaceVariant.withValues(alpha: 0.55),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: colors.primary,
+                size: 22,
+              ),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasText)
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      color: colors.onSurfaceVariant,
+                      onPressed: () {
+                        controller.clear();
+                        focusNode.requestFocus();
+                      },
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6, top: 6, bottom: 6),
+                    child: Material(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        onTap: onGenerate,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              filled: true,
+              fillColor: colors.surface,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 15,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(
+                  color: colors.outline.withValues(alpha: 0.12),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(
+                  color: colors.outline.withValues(alpha: 0.12),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(
+                  color: colors.primary,
+                  width: 1.5,
                 ),
               ),
             ),
           ),
-          filled: true,
-          fillColor:
-          colors.surface,
-          contentPadding:
-          const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 15,
-          ),
-          border: OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(19),
-            borderSide: BorderSide(
-              color: colors.outline
-                  .withValues(
-                alpha: 0.15,
-              ),
-            ),
-          ),
-          enabledBorder:
-          OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(19),
-            borderSide: BorderSide(
-              color: colors.outline
-                  .withValues(
-                alpha: 0.15,
-              ),
-            ),
-          ),
-          focusedBorder:
-          OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(19),
-            borderSide: BorderSide(
-              color: colors.primary,
-              width: 1.5,
-            ),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -882,55 +944,63 @@ class _SearchInput
 // EXAMPLE CHIP
 // ============================================================================
 
-class _ExampleChip
-    extends StatelessWidget {
+class _ExampleChip extends StatelessWidget {
   final String text;
+  final IconData icon;
   final VoidCallback onTap;
 
   const _ExampleChip({
     required this.text,
+    required this.icon,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors =
-        Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
 
     return Material(
       color: colors.surface,
-      borderRadius:
-      BorderRadius.circular(13),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius:
-        BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding:
-          const EdgeInsets.symmetric(
+          padding: const EdgeInsets.symmetric(
             horizontal: 12,
-            vertical: 10,
+            vertical: 9,
           ),
-          decoration:
-          BoxDecoration(
-            borderRadius:
-            BorderRadius.circular(13),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: colors.outline
-                  .withValues(
-                alpha: 0.14,
-              ),
+              color: colors.outline.withValues(alpha: 0.12),
             ),
           ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color:
-              colors.onSurface,
-              fontSize: 11.5,
-              fontWeight:
-              FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: colors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                text,
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.add_rounded,
+                size: 14,
+                color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+            ],
           ),
         ),
       ),

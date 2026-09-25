@@ -44,17 +44,46 @@ class _IngredientsScreenState
   ];
 
   @override
+  void initState() {
+    super.initState();
+
+    // Make absolutely sure the field doesn't
+    // automatically open the keyboard when
+    // this screen first appears.
+    inputFocusNode.addListener(() {
+      if (!inputFocusNode.hasFocus) {
+        return;
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+  }
+
+  @override
   void dispose() {
     controller.dispose();
     inputFocusNode.dispose();
     super.dispose();
   }
 
-  void addIngredient(String value) {
+  // --------------------------------------------------------------------------
+  // ADD INGREDIENT
+  // --------------------------------------------------------------------------
+
+  void addIngredient(
+      String value, {
+        bool keepKeyboard = false,
+      }) {
     final ingredient = value.trim();
 
     if (ingredient.isEmpty) {
-      inputFocusNode.requestFocus();
+      if (keepKeyboard) {
+        inputFocusNode.requestFocus();
+      }
       return;
     }
 
@@ -66,7 +95,13 @@ class _IngredientsScreenState
 
     if (exists) {
       controller.clear();
-      inputFocusNode.requestFocus();
+
+      // Only restore focus if the user was
+      // already intentionally typing.
+      if (keepKeyboard) {
+        inputFocusNode.requestFocus();
+      }
+
       return;
     }
 
@@ -77,10 +112,51 @@ class _IngredientsScreenState
     });
 
     controller.clear();
-    inputFocusNode.requestFocus();
+
+    // IMPORTANT:
+    //
+    // We DO NOT request focus here by default.
+    //
+    // This prevents the keyboard from popping up
+    // when the user selects Quick Add ingredients.
+    //
+    // If the user is manually typing and presses
+    // the keyboard's "done" button, the keyboard
+    // behavior is still controlled naturally by
+    // Flutter.
+    if (keepKeyboard) {
+      inputFocusNode.requestFocus();
+    }
   }
 
-  void removeIngredient(String ingredient) {
+  // --------------------------------------------------------------------------
+  // ADD FROM QUICK SUGGESTION
+  // --------------------------------------------------------------------------
+
+  void addSuggestion(String ingredient) {
+    // Explicitly dismiss keyboard before adding
+    // a quick suggestion.
+    //
+    // This guarantees that selecting:
+    //
+    // Potato → Tomato → Paneer
+    //
+    // will NOT keep reopening the keyboard.
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    addIngredient(
+      ingredient,
+      keepKeyboard: false,
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // REMOVE INGREDIENT
+  // --------------------------------------------------------------------------
+
+  void removeIngredient(
+      String ingredient,
+      ) {
     HapticFeedback.selectionClick();
 
     setState(() {
@@ -88,12 +164,16 @@ class _IngredientsScreenState
     });
   }
 
+  // --------------------------------------------------------------------------
+  // CONTINUE
+  // --------------------------------------------------------------------------
+
   void continueToPreferences() {
     if (ingredients.isEmpty) return;
 
     HapticFeedback.mediumImpact();
 
-    FocusScope.of(context).unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
 
     Navigator.push(
       context,
@@ -101,7 +181,9 @@ class _IngredientsScreenState
         builder: (_) =>
             CookingPreferencesScreen(
               ingredients:
-              List<String>.from(ingredients),
+              List<String>.from(
+                ingredients,
+              ),
               initialTime:
               widget.initialTime,
               initialDiet:
@@ -115,7 +197,9 @@ class _IngredientsScreenState
     );
   }
 
-  bool containsIngredient(String value) {
+  bool containsIngredient(
+      String value,
+      ) {
     return ingredients.any(
           (ingredient) =>
       ingredient.toLowerCase() ==
@@ -125,196 +209,397 @@ class _IngredientsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final theme =
+    Theme.of(context);
 
-    final textPrimary = colors.onSurface;
+    final colors =
+        theme.colorScheme;
+
+    final isDark =
+        theme.brightness ==
+            Brightness.dark;
+
+    final textPrimary =
+        colors.onSurface;
+
     final textSecondary =
         colors.onSurfaceVariant;
 
     final borderColor =
     colors.outline.withValues(
-      alpha: theme.brightness ==
-          Brightness.dark
-          ? 0.35
-          : 0.18,
+      alpha:
+      isDark ? 0.30 : 0.16,
     );
 
     return Scaffold(
       backgroundColor:
       theme.scaffoldBackgroundColor,
+
+      resizeToAvoidBottomInset: true,
+
       appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Back',
-          icon: const Icon(
-            Icons.arrow_back_rounded,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor:
+        theme.scaffoldBackgroundColor,
+        surfaceTintColor:
+        Colors.transparent,
+
+        leading: Padding(
+          padding:
+          const EdgeInsets.only(
+            left: 12,
           ),
-          onPressed: () {
-            HapticFeedback.selectionClick();
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Ingredients',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics:
-                const BouncingScrollPhysics(),
-                padding:
-                const EdgeInsets.fromLTRB(
-                  20,
-                  10,
-                  20,
-                  30,
-                ),
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    const _StepIndicator(
-                      currentStep: 1,
-                      totalSteps: 3,
-                    ),
+          child: IconButton(
+            tooltip: 'Back',
+            onPressed: () {
+              HapticFeedback
+                  .selectionClick();
 
-                    const SizedBox(height: 28),
+              FocusManager.instance
+                  .primaryFocus
+                  ?.unfocus();
 
-                    Text(
-                      'What do you have?',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 30,
-                        height: 1.08,
-                        fontWeight:
-                        FontWeight.w900,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-
-                    const SizedBox(height: 9),
-
-                    Text(
-                      'Tell us what is available in '
-                          'your kitchen. TADKA will build '
-                          'recipes around it.',
-                      style: TextStyle(
-                        color: textSecondary,
-                        fontSize: 14,
-                        height: 1.45,
-                        fontWeight:
-                        FontWeight.w500,
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    _IngredientInput(
-                      controller: controller,
-                      focusNode:
-                      inputFocusNode,
-                      onSubmitted:
-                      addIngredient,
-                      onAdd: () => addIngredient(
-                        controller.text,
-                      ),
-                      borderColor:
-                      borderColor,
-                    ),
-
-                    const SizedBox(height: 26),
-
-                    if (ingredients.isNotEmpty)
-                      _AddedIngredientsSection(
-                        ingredients:
-                        ingredients,
-                        textPrimary:
-                        textPrimary,
-                        primary:
-                        colors.primary,
-                        onRemove:
-                        removeIngredient,
-                      ),
-
-                    if (ingredients.isNotEmpty)
-                      const SizedBox(height: 28),
-
-                    _SectionTitle(
-                      title: 'Quick add',
-                      subtitle:
-                      'Tap an ingredient to add it',
-                      textPrimary:
-                      textPrimary,
-                      textSecondary:
-                      textSecondary,
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    Wrap(
-                      spacing: 9,
-                      runSpacing: 9,
-                      children:
-                      suggestions.map(
-                            (item) {
-                          final exists =
-                          containsIngredient(
-                            item,
-                          );
-
-                          return _IngredientSuggestion(
-                            label: item,
-                            selected:
-                            exists,
-                            primary:
-                            colors.primary,
-                            surface:
-                            colors.surface,
-                            border:
-                            borderColor,
-                            textPrimary:
-                            textPrimary,
-                            textSecondary:
-                            textSecondary,
-                            onTap: exists
-                                ? null
-                                : () =>
-                                addIngredient(
-                                  item,
-                                ),
-                          );
-                        },
-                      ).toList(),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    _TipCard(
-                      primary:
-                      colors.primary,
-                      textSecondary:
-                      textSecondary,
-                    ),
-                  ],
+              Navigator.pop(context);
+            },
+            icon: Container(
+              width: 40,
+              height: 40,
+              decoration:
+              BoxDecoration(
+                color: colors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: borderColor,
                 ),
               ),
+              child: const Icon(
+                Icons
+                    .arrow_back_rounded,
+                size: 20,
+              ),
             ),
+          ),
+        ),
 
-            _BottomAction(
-              enabled:
-              ingredients.isNotEmpty,
-              count: ingredients.length,
-              primary: colors.primary,
-              onPressed:
-              continueToPreferences,
+        titleSpacing: 8,
+
+        title: Column(
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Create a recipe',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight:
+                FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+            Text(
+              'Step 1 of 3',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 11,
+                fontWeight:
+                FontWeight.w600,
+              ),
             ),
           ],
+        ),
+      ),
+
+      body: GestureDetector(
+        behavior:
+        HitTestBehavior.translucent,
+
+        onTap: () {
+          FocusManager.instance
+              .primaryFocus
+              ?.unfocus();
+        },
+
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child:
+                SingleChildScrollView(
+                  keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior
+                      .onDrag,
+
+                  physics:
+                  const BouncingScrollPhysics(),
+
+                  padding:
+                  const EdgeInsets.fromLTRB(
+                    20,
+                    10,
+                    20,
+                    30,
+                  ),
+
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      const _StepIndicator(
+                        currentStep: 1,
+                        totalSteps: 3,
+                      ),
+
+                      const SizedBox(
+                        height: 30,
+                      ),
+
+                      // ======================================================
+                      // HERO
+                      // ======================================================
+
+                      Text(
+                        'What do you have?',
+                        style: TextStyle(
+                          color:
+                          textPrimary,
+                          fontSize: 31,
+                          height: 1.05,
+                          fontWeight:
+                          FontWeight.w900,
+                          letterSpacing:
+                          -1.1,
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 10,
+                      ),
+
+                      Text(
+                        'Add the ingredients available '
+                            'in your kitchen. TADKA will turn '
+                            'them into recipe ideas.',
+                        style: TextStyle(
+                          color:
+                          textSecondary,
+                          fontSize: 14,
+                          height: 1.5,
+                          fontWeight:
+                          FontWeight.w500,
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 25,
+                      ),
+
+                      // ======================================================
+                      // SEARCH INPUT
+                      // ======================================================
+
+                      _IngredientInput(
+                        controller:
+                        controller,
+                        focusNode:
+                        inputFocusNode,
+                        onSubmitted:
+                            (value) {
+                          addIngredient(
+                            value,
+                            keepKeyboard: true,
+                          );
+                        },
+                        onAdd: () {
+                          addIngredient(
+                            controller.text,
+                            keepKeyboard: true,
+                          );
+                        },
+                        borderColor:
+                        borderColor,
+                      ),
+
+                      const SizedBox(
+                        height: 12,
+                      ),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons
+                                .auto_awesome_rounded,
+                            size: 14,
+                            color:
+                            colors.primary,
+                          ),
+                          const SizedBox(
+                            width: 6,
+                          ),
+                          Expanded(
+                            child: Text(
+                              'Tap the search bar to start '
+                                  'adding ingredients.',
+                              style: TextStyle(
+                                color:
+                                textSecondary,
+                                fontSize: 11,
+                                fontWeight:
+                                FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // ======================================================
+                      // YOUR INGREDIENTS
+                      // ======================================================
+
+                      AnimatedSwitcher(
+                        duration:
+                        const Duration(
+                          milliseconds: 250,
+                        ),
+
+                        child:
+                        ingredients.isEmpty
+                            ? const SizedBox(
+                          key: ValueKey(
+                            'empty',
+                          ),
+                        )
+                            : Padding(
+                          key:
+                          const ValueKey(
+                            'ingredients',
+                          ),
+                          padding:
+                          const EdgeInsets
+                              .only(
+                            top: 28,
+                          ),
+                          child:
+                          _AddedIngredientsSection(
+                            ingredients:
+                            ingredients,
+                            textPrimary:
+                            textPrimary,
+                            primary:
+                            colors.primary,
+                            onRemove:
+                            removeIngredient,
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(
+                        height:
+                        ingredients.isEmpty
+                            ? 30
+                            : 32,
+                      ),
+
+                      // ======================================================
+                      // QUICK ADD
+                      // ======================================================
+
+                      _SectionTitle(
+                        title:
+                        'Quick add',
+                        subtitle:
+                        'Common ingredients you can add instantly',
+                        textPrimary:
+                        textPrimary,
+                        textSecondary:
+                        textSecondary,
+                      ),
+
+                      const SizedBox(
+                        height: 14,
+                      ),
+
+                      Wrap(
+                        spacing: 9,
+                        runSpacing: 9,
+                        children:
+                        suggestions
+                            .map(
+                              (item) {
+                            final exists =
+                            containsIngredient(
+                              item,
+                            );
+
+                            return _IngredientSuggestion(
+                              label: item,
+                              selected:
+                              exists,
+                              primary:
+                              colors.primary,
+                              surface:
+                              colors.surface,
+                              border:
+                              borderColor,
+                              textPrimary:
+                              textPrimary,
+                              textSecondary:
+                              textSecondary,
+                              onTap:
+                              exists
+                                  ? null
+                                  : () {
+                                addSuggestion(
+                                  item,
+                                );
+                              },
+                            );
+                          },
+                        ).toList(),
+                      ),
+
+                      const SizedBox(
+                        height: 28,
+                      ),
+
+                      // ======================================================
+                      // TIP
+                      // ======================================================
+
+                      _TipCard(
+                        primary:
+                        colors.primary,
+                        textPrimary:
+                        textPrimary,
+                        textSecondary:
+                        textSecondary,
+                      ),
+
+                      const SizedBox(
+                        height: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // =============================================================
+              // BOTTOM ACTION
+              // =============================================================
+
+              _BottomAction(
+                enabled:
+                ingredients.isNotEmpty,
+                count:
+                ingredients.length,
+                primary:
+                colors.primary,
+                onPressed:
+                continueToPreferences,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -325,7 +610,8 @@ class _IngredientsScreenState
 // STEP INDICATOR
 // ============================================================================
 
-class _StepIndicator extends StatelessWidget {
+class _StepIndicator
+    extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
 
@@ -335,32 +621,53 @@ class _StepIndicator extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     final colors =
-        Theme.of(context).colorScheme;
+        Theme.of(context)
+            .colorScheme;
 
     return Row(
       children: List.generate(
         totalSteps,
             (index) {
+          final active =
+              index < currentStep;
+
           return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(
-                right: index ==
-                    totalSteps - 1
-                    ? 0
-                    : 6,
+            child:
+            AnimatedContainer(
+              duration:
+              const Duration(
+                milliseconds: 250,
               ),
-              height: 4,
-              decoration: BoxDecoration(
-                color: index < currentStep
+
+              margin:
+              EdgeInsets.only(
+                right:
+                index ==
+                    totalSteps -
+                        1
+                    ? 0
+                    : 7,
+              ),
+
+              height: 5,
+
+              decoration:
+              BoxDecoration(
+                color: active
                     ? colors.primary
                     : colors.outline
                     .withValues(
-                  alpha: 0.15,
+                  alpha: 0.14,
                 ),
                 borderRadius:
-                BorderRadius.circular(10),
+                BorderRadius
+                    .circular(
+                  20,
+                ),
               ),
             ),
           );
@@ -371,15 +678,21 @@ class _StepIndicator extends StatelessWidget {
 }
 
 // ============================================================================
-// INPUT
+// INGREDIENT INPUT
 // ============================================================================
 
 class _IngredientInput
     extends StatelessWidget {
-  final TextEditingController controller;
+  final TextEditingController
+  controller;
+
   final FocusNode focusNode;
-  final ValueChanged<String> onSubmitted;
+
+  final ValueChanged<String>
+  onSubmitted;
+
   final VoidCallback onAdd;
+
   final Color borderColor;
 
   const _IngredientInput({
@@ -391,51 +704,189 @@ class _IngredientInput
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     final colors =
-        Theme.of(context).colorScheme;
+        Theme.of(context)
+            .colorScheme;
 
-    return TextField(
-      controller: controller,
-      focusNode: focusNode,
-      textInputAction:
-      TextInputAction.done,
-      textCapitalization:
-      TextCapitalization.words,
-      onSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        hintText:
-        'e.g. Potato, paneer, rice...',
-        prefixIcon: const Icon(
-          Icons.search_rounded,
+    return Container(
+      decoration:
+      BoxDecoration(
+        borderRadius:
+        BorderRadius.circular(
+          19,
         ),
-        suffixIcon: IconButton(
-          tooltip: 'Add ingredient',
-          onPressed: onAdd,
-          icon: Icon(
-            Icons.add_circle_rounded,
-            color: colors.primary,
-            size: 27,
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow
+                .withValues(
+              alpha: 0.05,
+            ),
+            blurRadius: 18,
+            offset:
+            const Offset(0, 6),
           ),
+        ],
+      ),
+
+      child: TextField(
+        controller:
+        controller,
+
+        focusNode:
+        focusNode,
+
+        // IMPORTANT:
+        // The keyboard ONLY opens when
+        // the user taps this field.
+        autofocus: false,
+
+        textInputAction:
+        TextInputAction.done,
+
+        textCapitalization:
+        TextCapitalization.words,
+
+        onSubmitted:
+        onSubmitted,
+
+        style: TextStyle(
+          color:
+          colors.onSurface,
+          fontSize: 14,
+          fontWeight:
+          FontWeight.w600,
         ),
-        border: OutlineInputBorder(
-          borderRadius:
-          BorderRadius.circular(18),
-          borderSide:
-          BorderSide(color: borderColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius:
-          BorderRadius.circular(18),
-          borderSide:
-          BorderSide(color: borderColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius:
-          BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: colors.primary,
-            width: 1.7,
+
+        decoration:
+        InputDecoration(
+          hintText:
+          'Search or type an ingredient...',
+
+          hintStyle:
+          TextStyle(
+            color: colors
+                .onSurfaceVariant
+                .withValues(
+              alpha: 0.70,
+            ),
+            fontSize: 13,
+            fontWeight:
+            FontWeight.w500,
+          ),
+
+          prefixIcon:
+          Padding(
+            padding:
+            const EdgeInsets.only(
+              left: 15,
+              right: 8,
+            ),
+            child: Icon(
+              Icons
+                  .search_rounded,
+              color: colors
+                  .onSurfaceVariant,
+              size: 22,
+            ),
+          ),
+
+          prefixIconConstraints:
+          const BoxConstraints(
+            minWidth: 45,
+          ),
+
+          suffixIcon:
+          Padding(
+            padding:
+            const EdgeInsets.only(
+              right: 7,
+            ),
+            child:
+            IconButton(
+              tooltip:
+              'Add ingredient',
+
+              onPressed:
+              onAdd,
+
+              icon:
+              Container(
+                width: 38,
+                height: 38,
+
+                decoration:
+                BoxDecoration(
+                  color:
+                  colors.primary,
+                  shape:
+                  BoxShape.circle,
+                ),
+
+                child:
+                const Icon(
+                  Icons
+                      .add_rounded,
+                  color:
+                  Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+
+          filled: true,
+
+          fillColor:
+          colors.surface,
+
+          contentPadding:
+          const EdgeInsets
+              .symmetric(
+            horizontal: 14,
+            vertical: 17,
+          ),
+
+          border:
+          OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(
+              19,
+            ),
+            borderSide:
+            BorderSide(
+              color:
+              borderColor,
+            ),
+          ),
+
+          enabledBorder:
+          OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(
+              19,
+            ),
+            borderSide:
+            BorderSide(
+              color:
+              borderColor,
+            ),
+          ),
+
+          focusedBorder:
+          OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(
+              19,
+            ),
+            borderSide:
+            BorderSide(
+              color:
+              colors.primary,
+              width: 1.7,
+            ),
           ),
         ),
       ),
@@ -452,7 +903,8 @@ class _AddedIngredientsSection
   final List<String> ingredients;
   final Color textPrimary;
   final Color primary;
-  final ValueChanged<String> onRemove;
+  final ValueChanged<String>
+  onRemove;
 
   const _AddedIngredientsSection({
     required this.ingredients,
@@ -462,60 +914,116 @@ class _AddedIngredientsSection
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
+    final colors =
+        Theme.of(context)
+            .colorScheme;
+
     return Column(
       crossAxisAlignment:
       CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(
-              'Your ingredients',
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 16,
-                fontWeight:
-                FontWeight.w900,
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    'Your ingredients',
+                    style:
+                    TextStyle(
+                      color:
+                      textPrimary,
+                      fontSize: 16,
+                      fontWeight:
+                      FontWeight.w900,
+                      letterSpacing:
+                      -0.2,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    width: 8,
+                  ),
+
+                  Container(
+                    padding:
+                    const EdgeInsets
+                        .symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration:
+                    BoxDecoration(
+                      color:
+                      primary.withValues(
+                        alpha: 0.10,
+                      ),
+                      borderRadius:
+                      BorderRadius
+                          .circular(
+                        20,
+                      ),
+                    ),
+                    child:
+                    Text(
+                      '${ingredients.length}',
+                      style:
+                      TextStyle(
+                        color:
+                        primary,
+                        fontSize:
+                        10,
+                        fontWeight:
+                        FontWeight
+                            .w900,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding:
-              const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                color:
-                primary.withValues(
-                  alpha: 0.10,
+
+            Text(
+              'Tap to remove',
+              style:
+              TextStyle(
+                color: colors
+                    .onSurfaceVariant
+                    .withValues(
+                  alpha: 0.65,
                 ),
-                borderRadius:
-                BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${ingredients.length}',
-                style: TextStyle(
-                  color: primary,
-                  fontSize: 11,
-                  fontWeight:
-                  FontWeight.w900,
-                ),
+                fontSize: 10,
+                fontWeight:
+                FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 11),
+
+        const SizedBox(
+          height: 12,
+        ),
+
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: ingredients.map(
+          children:
+          ingredients.map(
                 (ingredient) {
               return _IngredientChip(
-                label: ingredient,
-                primary: primary,
-                onRemove: () =>
-                    onRemove(ingredient),
+                label:
+                ingredient,
+                primary:
+                primary,
+                onRemove:
+                    () {
+                  onRemove(
+                    ingredient,
+                  );
+                },
               );
             },
           ).toList(),
@@ -526,7 +1034,7 @@ class _AddedIngredientsSection
 }
 
 // ============================================================================
-// CHIP
+// INGREDIENT CHIP
 // ============================================================================
 
 class _IngredientChip
@@ -542,51 +1050,118 @@ class _IngredientChip
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
+    final colors =
+        Theme.of(context)
+            .colorScheme;
+
     return Material(
       color:
-      primary.withValues(alpha: 0.10),
+      primary.withValues(
+        alpha: 0.09,
+      ),
+
       borderRadius:
-      BorderRadius.circular(13),
+      BorderRadius.circular(
+        14,
+      ),
+
       child: InkWell(
-        onTap: onRemove,
+        onTap:
+        onRemove,
+
         borderRadius:
-        BorderRadius.circular(13),
-        child: Padding(
+        BorderRadius.circular(
+          14,
+        ),
+
+        child: Container(
           padding:
-          const EdgeInsets.fromLTRB(
+          const EdgeInsets
+              .fromLTRB(
             11,
             9,
             8,
             9,
           ),
+
+          decoration:
+          BoxDecoration(
+            borderRadius:
+            BorderRadius.circular(
+              14,
+            ),
+
+            border:
+            Border.all(
+              color:
+              primary.withValues(
+                alpha: 0.16,
+              ),
+            ),
+          ),
+
           child: Row(
             mainAxisSize:
             MainAxisSize.min,
+
             children: [
-              Icon(
-                Icons.check_rounded,
-                color: primary,
-                size: 16,
+              Container(
+                width: 21,
+                height: 21,
+
+                decoration:
+                BoxDecoration(
+                  color:
+                  primary.withValues(
+                    alpha: 0.14,
+                  ),
+                  shape:
+                  BoxShape.circle,
+                ),
+
+                child:
+                Icon(
+                  Icons
+                      .check_rounded,
+                  color:
+                  primary,
+                  size: 14,
+                ),
               ),
-              const SizedBox(width: 6),
+
+              const SizedBox(
+                width: 7,
+              ),
+
               Text(
                 label,
-                style: TextStyle(
-                  color: primary,
-                  fontSize: 13,
+                style:
+                TextStyle(
+                  color:
+                  primary,
+                  fontSize:
+                  12.5,
                   fontWeight:
-                  FontWeight.w700,
+                  FontWeight.w800,
                 ),
               ),
-              const SizedBox(width: 4),
+
+              const SizedBox(
+                width: 5,
+              ),
+
               Icon(
-                Icons.close_rounded,
-                color:
-                primary.withValues(
-                  alpha: 0.7,
+                Icons
+                    .close_rounded,
+                color: colors
+                    .onSurfaceVariant
+                    .withValues(
+                  alpha: 0.65,
                 ),
-                size: 16,
+                size: 15,
               ),
             ],
           ),
@@ -597,7 +1172,7 @@ class _IngredientChip
 }
 
 // ============================================================================
-// SECTION
+// SECTION TITLE
 // ============================================================================
 
 class _SectionTitle
@@ -615,25 +1190,37 @@ class _SectionTitle
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     return Column(
       crossAxisAlignment:
       CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: TextStyle(
-            color: textPrimary,
+          style:
+          TextStyle(
+            color:
+            textPrimary,
             fontSize: 16,
             fontWeight:
             FontWeight.w900,
+            letterSpacing:
+            -0.2,
           ),
         ),
-        const SizedBox(height: 3),
+
+        const SizedBox(
+          height: 3,
+        ),
+
         Text(
           subtitle,
-          style: TextStyle(
-            color: textSecondary,
+          style:
+          TextStyle(
+            color:
+            textSecondary,
             fontSize: 11,
             fontWeight:
             FontWeight.w500,
@@ -645,7 +1232,7 @@ class _SectionTitle
 }
 
 // ============================================================================
-// SUGGESTION
+// QUICK ADD SUGGESTION
 // ============================================================================
 
 class _IngredientSuggestion
@@ -671,51 +1258,101 @@ class _IngredientSuggestion
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     return Material(
       color: selected
-          ? primary.withValues(alpha: 0.09)
+          ? primary.withValues(
+        alpha: 0.08,
+      )
           : surface,
+
       borderRadius:
-      BorderRadius.circular(14),
+      BorderRadius.circular(
+        14,
+      ),
+
       child: InkWell(
-        onTap: onTap,
+        onTap:
+        onTap,
+
         borderRadius:
-        BorderRadius.circular(14),
-        child: Container(
+        BorderRadius.circular(
+          14,
+        ),
+
+        child:
+        AnimatedContainer(
+          duration:
+          const Duration(
+            milliseconds: 180,
+          ),
+
           padding:
-          const EdgeInsets.symmetric(
-            horizontal: 12,
+          const EdgeInsets
+              .symmetric(
+            horizontal: 13,
             vertical: 10,
           ),
-          decoration: BoxDecoration(
+
+          decoration:
+          BoxDecoration(
             borderRadius:
-            BorderRadius.circular(14),
-            border: Border.all(
+            BorderRadius.circular(
+              14,
+            ),
+
+            border:
+            Border.all(
               color: selected
                   ? primary.withValues(
-                alpha: 0.4,
+                alpha: 0.30,
               )
                   : border,
             ),
           ),
+
           child: Row(
             mainAxisSize:
             MainAxisSize.min,
+
             children: [
-              Icon(
-                selected
-                    ? Icons.check_rounded
-                    : Icons.add_rounded,
-                size: 16,
-                color: selected
-                    ? primary
-                    : textSecondary,
+              AnimatedSwitcher(
+                duration:
+                const Duration(
+                  milliseconds: 180,
+                ),
+
+                child:
+                Icon(
+                  selected
+                      ? Icons
+                      .check_circle_rounded
+                      : Icons
+                      .add_circle_outline_rounded,
+
+                  key:
+                  ValueKey(
+                    selected,
+                  ),
+
+                  size: 17,
+
+                  color: selected
+                      ? primary
+                      : textSecondary,
+                ),
               ),
-              const SizedBox(width: 6),
+
+              const SizedBox(
+                width: 7,
+              ),
+
               Text(
                 label,
-                style: TextStyle(
+                style:
+                TextStyle(
                   color: selected
                       ? primary
                       : textPrimary,
@@ -733,52 +1370,130 @@ class _IngredientSuggestion
 }
 
 // ============================================================================
-// TIP
+// TIP CARD
 // ============================================================================
 
 class _TipCard
     extends StatelessWidget {
   final Color primary;
+  final Color textPrimary;
   final Color textSecondary;
 
   const _TipCard({
     required this.primary,
+    required this.textPrimary,
     required this.textSecondary,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     return Container(
+      width: double.infinity,
+
       padding:
-      const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color:
-        primary.withValues(alpha: 0.06),
-        borderRadius:
-        BorderRadius.circular(16),
+      const EdgeInsets.all(
+        15,
       ),
+
+      decoration:
+      BoxDecoration(
+        color:
+        primary.withValues(
+          alpha: 0.065,
+        ),
+
+        borderRadius:
+        BorderRadius.circular(
+          17,
+        ),
+
+        border:
+        Border.all(
+          color:
+          primary.withValues(
+            alpha: 0.10,
+          ),
+        ),
+      ),
+
       child: Row(
         crossAxisAlignment:
         CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.lightbulb_outline_rounded,
-            color: primary,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Add whatever you have. Even a few '
-                  'ingredients can be enough for TADKA '
-                  'to find something useful.',
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 11,
-                height: 1.45,
-                fontWeight:
-                FontWeight.w500,
+          Container(
+            width: 34,
+            height: 34,
+
+            decoration:
+            BoxDecoration(
+              color:
+              primary.withValues(
+                alpha: 0.12,
               ),
+              shape:
+              BoxShape.circle,
+            ),
+
+            child:
+            Icon(
+              Icons
+                  .auto_awesome_rounded,
+              color:
+              primary,
+              size: 18,
+            ),
+          ),
+
+          const SizedBox(
+            width: 11,
+          ),
+
+          Expanded(
+            child:
+            Column(
+              crossAxisAlignment:
+              CrossAxisAlignment
+                  .start,
+
+              children: [
+                Text(
+                  'TADKA tip',
+                  style:
+                  TextStyle(
+                    color:
+                    textPrimary,
+                    fontSize:
+                    12,
+                    fontWeight:
+                    FontWeight
+                        .w900,
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 3,
+                ),
+
+                Text(
+                  'Don’t worry if you only have a few '
+                      'ingredients. TADKA can still find '
+                      'something useful to make.',
+                  style:
+                  TextStyle(
+                    color:
+                    textSecondary,
+                    fontSize:
+                    11,
+                    height:
+                    1.45,
+                    fontWeight:
+                    FontWeight
+                        .w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -806,9 +1521,14 @@ class _BottomAction
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     final theme =
     Theme.of(context);
+
+    final colors =
+        theme.colorScheme;
 
     return Container(
       padding:
@@ -818,13 +1538,17 @@ class _BottomAction
         20,
         18,
       ),
-      decoration: BoxDecoration(
+
+      decoration:
+      BoxDecoration(
         color:
         theme.scaffoldBackgroundColor,
-        border: Border(
-          top: BorderSide(
-            color: theme
-                .colorScheme
+
+        border:
+        Border(
+          top:
+          BorderSide(
+            color: colors
                 .outline
                 .withValues(
               alpha: 0.08,
@@ -832,67 +1556,161 @@ class _BottomAction
           ),
         ),
       ),
+
       child: SizedBox(
         width: double.infinity,
         height: 56,
-        child: ElevatedButton(
+
+        child:
+        ElevatedButton(
           onPressed:
-          enabled ? onPressed : null,
+          enabled
+              ? onPressed
+              : null,
+
           style:
           ElevatedButton.styleFrom(
-            backgroundColor: primary,
+            backgroundColor:
+            primary,
+
             foregroundColor:
             Colors.white,
+
             disabledBackgroundColor:
-            theme
-                .colorScheme
-                .outline
+            colors.outline
                 .withValues(
-              alpha: 0.14,
+              alpha: 0.13,
             ),
-            elevation: 0,
+
+            disabledForegroundColor:
+            colors
+                .onSurfaceVariant
+                .withValues(
+              alpha: 0.65,
+            ),
+
+            elevation:
+            enabled ? 2 : 0,
+
+            shadowColor:
+            primary.withValues(
+              alpha: 0.25,
+            ),
+
             shape:
             RoundedRectangleBorder(
               borderRadius:
-              BorderRadius.circular(17),
+              BorderRadius.circular(
+                17,
+              ),
             ),
           ),
-          child: enabled
-              ? Row(
-            mainAxisAlignment:
-            MainAxisAlignment.center,
-            children: [
-              const Text(
-                'CONTINUE',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight:
-                  FontWeight.w900,
+
+          child:
+          AnimatedSwitcher(
+            duration:
+            const Duration(
+              milliseconds: 180,
+            ),
+
+            child:
+            enabled
+                ? Row(
+              key:
+              const ValueKey(
+                'enabled',
+              ),
+
+              mainAxisAlignment:
+              MainAxisAlignment
+                  .center,
+
+              children: [
+                const Text(
+                  'CONTINUE',
+                  style:
+                  TextStyle(
+                    fontSize:
+                    13,
+                    fontWeight:
+                    FontWeight
+                        .w900,
+                    letterSpacing:
+                    0.4,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$count',
-                style:
-                const TextStyle(
-                  fontSize: 12,
-                  fontWeight:
-                  FontWeight.w900,
+
+                const SizedBox(
+                  width: 8,
                 ),
+
+                Container(
+                  padding:
+                  const EdgeInsets
+                      .symmetric(
+                    horizontal:
+                    7,
+                    vertical:
+                    3,
+                  ),
+
+                  decoration:
+                  BoxDecoration(
+                    color: Colors
+                        .white
+                        .withValues(
+                      alpha:
+                      0.18,
+                    ),
+
+                    borderRadius:
+                    BorderRadius
+                        .circular(
+                      20,
+                    ),
+                  ),
+
+                  child:
+                  Text(
+                    '$count',
+                    style:
+                    const TextStyle(
+                      fontSize:
+                      11,
+                      fontWeight:
+                      FontWeight
+                          .w900,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(
+                  width: 7,
+                ),
+
+                const Icon(
+                  Icons
+                      .arrow_forward_rounded,
+                  size: 19,
+                ),
+              ],
+            )
+                : const Text(
+              'ADD AN INGREDIENT TO CONTINUE',
+              key:
+              ValueKey(
+                'disabled',
               ),
-              const SizedBox(width: 5),
-              const Icon(
-                Icons.arrow_forward_rounded,
-                size: 19,
+              style:
+              TextStyle(
+                fontSize:
+                11,
+                fontWeight:
+                FontWeight
+                    .w800,
+                letterSpacing:
+                0.25,
               ),
-            ],
-          )
-              : const Text(
-            'ADD AN INGREDIENT TO CONTINUE',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight:
-              FontWeight.w800,
             ),
           ),
         ),

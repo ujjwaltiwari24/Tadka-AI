@@ -8,8 +8,7 @@ import '../recipes/recipe.dart';
 import '../recipes/recipe_results_screen.dart';
 import 'cooking_preferences.dart';
 
-class CookingPreferencesScreen
-    extends StatefulWidget {
+class CookingPreferencesScreen extends StatefulWidget {
   final List<String> ingredients;
 
   final String? initialTime;
@@ -27,13 +26,11 @@ class CookingPreferencesScreen
   });
 
   @override
-  State<CookingPreferencesScreen>
-  createState() =>
+  State<CookingPreferencesScreen> createState() =>
       _CookingPreferencesScreenState();
 }
 
-class _CookingPreferencesScreenState
-    extends State<CookingPreferencesScreen>
+class _CookingPreferencesScreenState extends State<CookingPreferencesScreen>
     with SingleTickerProviderStateMixin {
   // --------------------------------------------------------------------------
   // PREFERENCES
@@ -86,7 +83,7 @@ class _CookingPreferencesScreenState
   ];
 
   // --------------------------------------------------------------------------
-  // LOADING
+  // LOADING STATE
   // --------------------------------------------------------------------------
 
   bool loading = false;
@@ -94,14 +91,9 @@ class _CookingPreferencesScreenState
   Timer? _messageTimer;
   int _messageIndex = 0;
 
-  late final AnimationController
-  _animationController;
-
-  late final Animation<double>
-  _scaleAnimation;
-
-  late final Animation<double>
-  _rotationAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _rotationAnimation;
 
   final List<String> _loadingMessages = [
     'Analyzing your ingredients...',
@@ -127,56 +119,46 @@ class _CookingPreferencesScreenState
   void initState() {
     super.initState();
 
-    // Apply Quick Pick values.
-
-    if (widget.initialTime != null &&
-        times.contains(widget.initialTime)) {
+    if (widget.initialTime != null && times.contains(widget.initialTime)) {
       time = widget.initialTime!;
     }
 
-    if (widget.initialDiet != null &&
-        diets.contains(widget.initialDiet)) {
+    if (widget.initialDiet != null && diets.contains(widget.initialDiet)) {
       diet = widget.initialDiet!;
     }
 
-    if (widget.initialSpice != null &&
-        spices.contains(widget.initialSpice)) {
+    if (widget.initialSpice != null && spices.contains(widget.initialSpice)) {
       spice = widget.initialSpice!;
     }
 
-    if (widget.initialSkill != null &&
-        skills.contains(widget.initialSkill)) {
+    if (widget.initialSkill != null && skills.contains(widget.initialSkill)) {
       skill = widget.initialSkill!;
     }
 
-    _animationController =
-    AnimationController(
+    _animationController = AnimationController(
       vsync: this,
-      duration:
-      const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
 
-    _scaleAnimation =
-        Tween<double>(
-          begin: 0.94,
-          end: 1.06,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeInOut,
-          ),
-        );
+    _scaleAnimation = Tween<double>(
+      begin: 0.94,
+      end: 1.06,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
-    _rotationAnimation =
-        Tween<double>(
-          begin: -0.055,
-          end: 0.055,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeInOut,
-          ),
-        );
+    _rotationAnimation = Tween<double>(
+      begin: -0.04,
+      end: 0.04,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
@@ -192,7 +174,6 @@ class _CookingPreferencesScreenState
 
   void _startLoadingExperience() {
     _messageIndex = 0;
-
     _messageTimer?.cancel();
 
     _messageTimer = Timer.periodic(
@@ -201,9 +182,7 @@ class _CookingPreferencesScreenState
         if (!mounted || !loading) return;
 
         setState(() {
-          _messageIndex =
-              (_messageIndex + 1) %
-                  _loadingMessages.length;
+          _messageIndex = (_messageIndex + 1) % _loadingMessages.length;
         });
       },
     );
@@ -215,14 +194,13 @@ class _CookingPreferencesScreenState
   }
 
   // --------------------------------------------------------------------------
-  // GENERATE
+  // GENERATE RECIPES
   // --------------------------------------------------------------------------
 
   Future<void> generateRecipes() async {
     if (loading) return;
 
     HapticFeedback.mediumImpact();
-
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -231,8 +209,7 @@ class _CookingPreferencesScreenState
 
     _startLoadingExperience();
 
-    final preferences =
-    CookingPreferences(
+    final preferences = CookingPreferences(
       time: time,
       budget: budget,
       servings: servings,
@@ -243,11 +220,8 @@ class _CookingPreferencesScreenState
     );
 
     try {
-      final List<Recipe> recipes =
-      await RecipeAIService.instance
-          .generateRecipes(
-        ingredients:
-        widget.ingredients,
+      final List<Recipe> recipes = await RecipeAIService.instance.generateRecipes(
+        ingredients: widget.ingredients,
         preferences: preferences,
       );
 
@@ -258,10 +232,9 @@ class _CookingPreferencesScreenState
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              RecipeResultsScreen(
-                recipes: recipes,
-              ),
+          builder: (_) => RecipeResultsScreen(
+            recipes: recipes,
+          ),
         ),
       );
     } catch (error) {
@@ -278,29 +251,17 @@ class _CookingPreferencesScreenState
         ..showSnackBar(
           SnackBar(
             content: Text(
-              error
-                  .toString()
-                  .replaceFirst(
-                'RecipeAIException: ',
-                '',
-              ),
+              error.toString().replaceFirst('RecipeAIException: ', ''),
             ),
-            behavior:
-            SnackBarBehavior.floating,
-            margin:
-            const EdgeInsets.all(16),
-            duration:
-            const Duration(seconds: 4),
-            shape:
-            RoundedRectangleBorder(
-              borderRadius:
-              BorderRadius.circular(16),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            action:
-            SnackBarAction(
+            action: SnackBarAction(
               label: 'RETRY',
-              onPressed:
-              generateRecipes,
+              onPressed: generateRecipes,
             ),
           ),
         );
@@ -308,44 +269,52 @@ class _CookingPreferencesScreenState
   }
 
   // --------------------------------------------------------------------------
-  // BACK
+  // LEAVE DIALOG
   // --------------------------------------------------------------------------
 
   Future<bool> _showLeaveGenerationDialog() async {
-    final result =
-    await showDialog<bool>(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) {
+        final colors = Theme.of(context).colorScheme;
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text(
             'Stop generating recipes?',
             style: TextStyle(
-              fontWeight:
-              FontWeight.w800,
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
             ),
           ),
           content: const Text(
-            'TADKA is still working on your '
-                'recipes. If you leave now, the '
-                'current generation will be discarded.',
+            'TADKA AI is currently crafting your recipes. If you leave now, progress will be lost.',
+            style: TextStyle(fontSize: 13, height: 1.4),
           ),
           actions: [
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(
-                    context,
-                    false,
-                  ),
-              child:
-              const Text('KEEP COOKING'),
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'KEEP COOKING',
+                style: TextStyle(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.pop(
-                    context,
-                    true,
-                  ),
-              child: const Text('LEAVE'),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'LEAVE',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ],
         );
@@ -356,38 +325,63 @@ class _CookingPreferencesScreenState
   }
 
   // --------------------------------------------------------------------------
-  // SELECTION
+  // CUSTOM CHOICE SELECTOR
   // --------------------------------------------------------------------------
 
-  Widget selection(
+  Widget _buildChoiceSelector(
       List<String> items,
       String selected,
       ValueChanged<String> onChanged,
       ) {
-    return Wrap(
-      spacing: 9,
-      runSpacing: 9,
-      children: items.map((item) {
-        final isSelected =
-            item == selected;
+    final colors = Theme.of(context).colorScheme;
 
-        return ChoiceChip(
-          label: Text(item),
-          selected: isSelected,
-          onSelected: (_) {
-            HapticFeedback.selectionClick();
-            onChanged(item);
-          },
-          selectedColor:
-          const Color(0xFFE85D04),
-          labelStyle: TextStyle(
-            color: isSelected
-                ? Colors.white
-                : Theme.of(context)
-                .colorScheme
-                .onSurface,
-            fontWeight:
-            FontWeight.w700,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items.map((item) {
+        final isSelected = item == selected;
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged(item);
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 9,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected ? colors.primary : colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? colors.primary
+                      : colors.outline.withValues(alpha: 0.12),
+                ),
+                boxShadow: isSelected
+                    ? [
+                  BoxShadow(
+                    color: colors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+                    : null,
+              ),
+              child: Text(
+                item,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : colors.onSurface,
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         );
       }).toList(),
@@ -402,16 +396,13 @@ class _CookingPreferencesScreenState
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !loading,
-      onPopInvokedWithResult:
-          (didPop, result) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
         if (loading) {
-          final shouldLeave =
-          await _showLeaveGenerationDialog();
+          final shouldLeave = await _showLeaveGenerationDialog();
 
-          if (shouldLeave &&
-              mounted) {
+          if (shouldLeave && mounted) {
             _stopLoadingExperience();
 
             setState(() {
@@ -432,143 +423,89 @@ class _CookingPreferencesScreenState
   // LOADING SCREEN
   // --------------------------------------------------------------------------
 
-  Widget _buildLoadingScreen(
-      BuildContext context,
-      ) {
-    final theme =
-    Theme.of(context);
-
-    final isDark =
-        theme.brightness ==
-            Brightness.dark;
-
-    final primary =
-        theme.colorScheme.primary;
+  Widget _buildLoadingScreen(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor:
-      theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
+            // Top Bar
             Padding(
-              padding:
-              const EdgeInsets.fromLTRB(
-                14,
-                10,
-                20,
-                0,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
                   Material(
-                    color:
-                    theme.colorScheme.surface,
-                    borderRadius:
-                    BorderRadius.circular(
-                      14,
-                    ),
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(12),
                     child: InkWell(
-                      borderRadius:
-                      BorderRadius.circular(
-                        14,
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () async {
-                        final shouldLeave =
-                        await _showLeaveGenerationDialog();
+                        final shouldLeave = await _showLeaveGenerationDialog();
 
-                        if (shouldLeave &&
-                            mounted) {
+                        if (shouldLeave && mounted) {
                           _stopLoadingExperience();
 
                           setState(() {
                             loading = false;
                           });
 
-                          Navigator.of(
-                            context,
-                          ).pop();
+                          Navigator.of(context).pop();
                         }
                       },
                       child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration:
-                        BoxDecoration(
-                          borderRadius:
-                          BorderRadius
-                              .circular(
-                            14,
-                          ),
-                          border:
-                          Border.all(
-                            color: theme
-                                .colorScheme
-                                .outline
-                                .withValues(
-                              alpha: 0.12,
-                            ),
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.outline.withValues(alpha: 0.12),
                           ),
                         ),
                         child: const Icon(
-                          Icons
-                              .arrow_back_rounded,
-                          size: 21,
+                          Icons.arrow_back_rounded,
+                          size: 19,
                         ),
                       ),
                     ),
                   ),
-
-                  const SizedBox(width: 14),
-
+                  const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
                       'Creating your recipes',
                       style: TextStyle(
-                        fontSize: 17,
-                        fontWeight:
-                        FontWeight.w800,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-
                   Container(
-                    padding:
-                    const EdgeInsets
-                        .symmetric(
-                      horizontal: 9,
-                      vertical: 6,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
                     ),
-                    decoration:
-                    BoxDecoration(
-                      color:
-                      primary.withValues(
-                        alpha: 0.10,
-                      ),
-                      borderRadius:
-                      BorderRadius.circular(
-                        10,
-                      ),
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          Icons
-                              .auto_awesome_rounded,
-                          size: 14,
+                          Icons.auto_awesome_rounded,
+                          size: 13,
                           color: primary,
                         ),
-                        const SizedBox(
-                          width: 4,
-                        ),
+                        const SizedBox(width: 4),
                         Text(
                           'AI',
                           style: TextStyle(
                             color: primary,
                             fontSize: 10,
-                            fontWeight:
-                            FontWeight
-                                .w900,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],
@@ -581,214 +518,120 @@ class _CookingPreferencesScreenState
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
-                  padding:
-                  const EdgeInsets
-                      .fromLTRB(
-                    24,
-                    20,
-                    24,
-                    30,
-                  ),
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
                   child: Column(
                     children: [
+                      // Animated Flame Mascot
                       AnimatedBuilder(
-                        animation:
-                        _animationController,
-                        builder:
-                            (context, child) {
+                        animation: _animationController,
+                        builder: (context, child) {
                           return Transform.rotate(
-                            angle:
-                            _rotationAnimation
-                                .value,
-                            child:
-                            Transform.scale(
-                              scale:
-                              _scaleAnimation
-                                  .value,
+                            angle: _rotationAnimation.value,
+                            child: Transform.scale(
+                              scale: _scaleAnimation.value,
                               child: child,
                             ),
                           );
                         },
                         child: Container(
-                          width: 118,
-                          height: 118,
-                          decoration:
-                          BoxDecoration(
-                            gradient:
-                            const LinearGradient(
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
                               colors: [
-                                Color(
-                                  0xFFE85D04,
-                                ),
-                                Color(
-                                  0xFFDC2F02,
-                                ),
+                                primary,
+                                Color.lerp(primary, Colors.black, 0.2) ??
+                                    primary,
                               ],
-                              begin:
-                              Alignment
-                                  .topLeft,
-                              end:
-                              Alignment
-                                  .bottomRight,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            shape:
-                            BoxShape.circle,
+                            shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                primary.withValues(
-                                  alpha:
-                                  0.28,
-                                ),
-                                blurRadius:
-                                35,
-                                spreadRadius:
-                                3,
+                                color: primary.withValues(alpha: 0.30),
+                                blurRadius: 30,
+                                spreadRadius: 2,
                               ),
                             ],
                           ),
-                          child:
-                          const Icon(
-                            Icons
-                                .local_fire_department_rounded,
-                            color:
-                            Colors.white,
-                            size: 57,
+                          child: const Icon(
+                            Icons.local_fire_department_rounded,
+                            color: Colors.white,
+                            size: 54,
                           ),
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 28,
-                      ),
+                      const SizedBox(height: 24),
 
                       Text(
                         'TADKA AI',
                         style: TextStyle(
-                          color: isDark
-                              ? Colors.white
-                              : const Color(
-                            0xFF211D19,
-                          ),
-                          fontSize: 27,
-                          fontWeight:
-                          FontWeight.w900,
-                          letterSpacing: 1.1,
+                          color: colors.onSurface,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 7,
-                      ),
+                      const SizedBox(height: 4),
 
                       Text(
                         'Turning your ingredients into ideas',
-                        textAlign:
-                        TextAlign.center,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isDark
-                              ? const Color(
-                            0xFF9CA3AF,
-                          )
-                              : const Color(
-                            0xFF77716A,
-                          ),
-                          fontSize: 13,
-                          fontWeight:
-                          FontWeight.w500,
+                          color: colors.onSurfaceVariant,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 30,
-                      ),
+                      const SizedBox(height: 26),
 
+                      // Animated Loading Message Box
                       AnimatedSwitcher(
-                        duration:
-                        const Duration(
-                          milliseconds: 450,
-                        ),
+                        duration: const Duration(milliseconds: 400),
                         child: Container(
-                          key: ValueKey(
-                            _messageIndex,
+                          key: ValueKey(_messageIndex),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
                           ),
-                          width:
-                          double.infinity,
-                          padding:
-                          const EdgeInsets
-                              .symmetric(
-                            horizontal: 18,
-                            vertical: 16,
-                          ),
-                          decoration:
-                          BoxDecoration(
-                            color:
-                            primary.withValues(
-                              alpha:
-                              isDark
-                                  ? 0.10
-                                  : 0.06,
+                          decoration: BoxDecoration(
+                            color: primary.withValues(
+                              alpha: isDark ? 0.10 : 0.05,
                             ),
-                            borderRadius:
-                            BorderRadius
-                                .circular(
-                              18,
-                            ),
-                            border:
-                            Border.all(
-                              color:
-                              primary.withValues(
-                                alpha: 0.12,
-                              ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: primary.withValues(alpha: 0.14),
                             ),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                width: 38,
-                                height: 38,
-                                decoration:
-                                BoxDecoration(
-                                  color:
-                                  primary
-                                      .withValues(
-                                    alpha:
-                                    0.12,
-                                  ),
-                                  borderRadius:
-                                  BorderRadius
-                                      .circular(
-                                    12,
-                                  ),
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
-                                  _loadingIcons[
-                                  _messageIndex],
-                                  color:
-                                  primary,
-                                  size: 20,
+                                  _loadingIcons[_messageIndex],
+                                  color: primary,
+                                  size: 18,
                                 ),
                               ),
-                              const SizedBox(
-                                width: 12,
-                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _loadingMessages[
-                                  _messageIndex],
-                                  style:
-                                  TextStyle(
-                                    color: isDark
-                                        ? Colors
-                                        .white
-                                        : const Color(
-                                      0xFF211D19,
-                                    ),
-                                    fontSize:
-                                    13.5,
-                                    fontWeight:
-                                    FontWeight
-                                        .w800,
+                                  _loadingMessages[_messageIndex],
+                                  style: TextStyle(
+                                    color: colors.onSurface,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ),
@@ -797,149 +640,87 @@ class _CookingPreferencesScreenState
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 25,
-                      ),
+                      const SizedBox(height: 24),
 
                       Align(
-                        alignment:
-                        Alignment.centerLeft,
+                        alignment: Alignment.centerLeft,
                         child: Text(
-                          'Working with your ingredients',
+                          'Ingredients in use:',
                           style: TextStyle(
-                            color: isDark
-                                ? const Color(
-                              0xFFD1D5DB,
-                            )
-                                : const Color(
-                              0xFF5F5851,
-                            ),
-                            fontSize: 11.5,
-                            fontWeight:
-                            FontWeight.w700,
+                            color: colors.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 10,
-                      ),
+                      const SizedBox(height: 8),
 
                       Align(
-                        alignment:
-                        Alignment.centerLeft,
+                        alignment: Alignment.centerLeft,
                         child: Wrap(
-                          spacing: 7,
-                          runSpacing: 7,
-                          children: widget
-                              .ingredients
-                              .take(8)
-                              .map(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: widget.ingredients.take(8).map(
                                 (ingredient) {
                               return Container(
-                                padding:
-                                const EdgeInsets
-                                    .symmetric(
-                                  horizontal:
-                                  10,
-                                  vertical: 7,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
                                 ),
-                                decoration:
-                                BoxDecoration(
-                                  color: theme
-                                      .colorScheme
-                                      .surface,
-                                  borderRadius:
-                                  BorderRadius
-                                      .circular(
-                                    20,
-                                  ),
-                                  border:
-                                  Border.all(
-                                    color: theme
-                                        .colorScheme
-                                        .outline
-                                        .withValues(
-                                      alpha:
-                                      0.12,
-                                    ),
+                                decoration: BoxDecoration(
+                                  color: colors.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color:
+                                    colors.outline.withValues(alpha: 0.10),
                                   ),
                                 ),
-                                child:
-                                Text(
+                                child: Text(
                                   ingredient,
-                                  style:
-                                  TextStyle(
-                                    color: isDark
-                                        ? Colors
-                                        .white
-                                        : const Color(
-                                      0xFF403A35,
-                                    ),
-                                    fontSize:
-                                    10.5,
-                                    fontWeight:
-                                    FontWeight
-                                        .w600,
+                                  style: TextStyle(
+                                    color: colors.onSurface,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               );
                             },
-                          )
-                              .toList(),
+                          ).toList(),
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 27,
-                      ),
+                      const SizedBox(height: 24),
 
                       Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment
-                            .center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _AnimatedDot(
-                            controller:
-                            _animationController,
+                            controller: _animationController,
                             delay: 0,
                             color: primary,
                           ),
-                          const SizedBox(
-                            width: 7,
-                          ),
+                          const SizedBox(width: 6),
                           _AnimatedDot(
-                            controller:
-                            _animationController,
+                            controller: _animationController,
                             delay: 150,
                             color: primary,
                           ),
-                          const SizedBox(
-                            width: 7,
-                          ),
+                          const SizedBox(width: 6),
                           _AnimatedDot(
-                            controller:
-                            _animationController,
+                            controller: _animationController,
                             delay: 300,
                             color: primary,
                           ),
                         ],
                       ),
 
-                      const SizedBox(
-                        height: 25,
-                      ),
+                      const SizedBox(height: 16),
 
                       Text(
-                        'Please wait a few seconds',
+                        'Please wait a few seconds...',
                         style: TextStyle(
-                          color: isDark
-                              ? const Color(
-                            0xFF6B7280,
-                          )
-                              : const Color(
-                            0xFF9A938C,
-                          ),
+                          color: colors.onSurfaceVariant.withValues(alpha: 0.7),
                           fontSize: 11,
                         ),
                       ),
@@ -955,39 +736,32 @@ class _CookingPreferencesScreenState
   }
 
   // --------------------------------------------------------------------------
-  // PREFERENCES SCREEN
+  // PREFERENCES FORM SCREEN
   // --------------------------------------------------------------------------
 
-  Widget _buildPreferencesScreen(
-      BuildContext context,
-      ) {
-    final theme =
-    Theme.of(context);
+  Widget _buildPreferencesScreen(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
-    final colors =
-        theme.colorScheme;
-
-    final textPrimary =
-        colors.onSurface;
-
-    final textSecondary =
-        colors.onSurfaceVariant;
+    final textPrimary = colors.onSurface;
+    final textSecondary = colors.onSurfaceVariant;
 
     return Scaffold(
       appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-          ),
+          icon: const Icon(Icons.arrow_back_rounded, size: 20),
           onPressed: () {
             HapticFeedback.lightImpact();
             Navigator.of(context).pop();
           },
         ),
         title: const Text(
-          'Cooking preferences',
+          'Cooking Preferences',
           style: TextStyle(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
           ),
         ),
       ),
@@ -995,432 +769,303 @@ class _CookingPreferencesScreenState
         child: Column(
           children: [
             Expanded(
-              child:
-              SingleChildScrollView(
-                physics:
-                const BouncingScrollPhysics(),
-                padding:
-                const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Progress
+                    // Step Progress Indicator Bar
                     Row(
                       children: [
                         Expanded(
                           child: Container(
                             height: 4,
-                            decoration:
-                            BoxDecoration(
-                              color:
-                              colors.primary,
-                              borderRadius:
-                              BorderRadius
-                                  .circular(
-                                10,
-                              ),
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                         ),
-                        const SizedBox(
-                          width: 6,
-                        ),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Container(
                             height: 4,
-                            decoration:
-                            BoxDecoration(
-                              color:
-                              colors.primary,
-                              borderRadius:
-                              BorderRadius
-                                  .circular(
-                                10,
-                              ),
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                         ),
-                        const SizedBox(
-                          width: 6,
-                        ),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Container(
                             height: 4,
-                            decoration:
-                            BoxDecoration(
-                              color: colors
-                                  .outline
-                                  .withValues(
-                                alpha: 0.15,
-                              ),
-                              borderRadius:
-                              BorderRadius
-                                  .circular(
-                                10,
-                              ),
+                            decoration: BoxDecoration(
+                              color: colors.outline.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(
-                      height: 28,
-                    ),
+                    const SizedBox(height: 20),
 
                     Text(
-                      'Let’s make it personal.',
+                      'Let’s customize your recipe.',
                       style: TextStyle(
-                        color:
-                        textPrimary,
-                        fontSize: 29,
-                        fontWeight:
-                        FontWeight.w800,
+                        color: textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.4,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 4),
 
                     Text(
-                      'Tell TADKA AI what kind of meal '
-                          'works for you.',
+                      'Tailor the preparation to suit your time, diet, and taste.',
                       style: TextStyle(
-                        color:
-                        textSecondary,
-                        fontSize: 15,
+                        color: textSecondary,
+                        fontSize: 12,
+                        height: 1.4,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 28,
-                    ),
+                    const SizedBox(height: 22),
 
                     // TIME
-                    _Title(
-                      icon:
-                      Icons.timer_outlined,
-                      text:
-                      'How much time do you have?',
+                    _SectionTitle(
+                      icon: Icons.timer_outlined,
+                      text: 'How much time do you have?',
                     ),
+                    const SizedBox(height: 10),
+                    _buildChoiceSelector(times, time, (value) {
+                      setState(() => time = value);
+                    }),
 
-                    const SizedBox(
-                      height: 12,
-                    ),
-
-                    selection(
-                      times,
-                      time,
-                          (value) {
-                        setState(() {
-                          time = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(
-                      height: 26,
-                    ),
+                    const SizedBox(height: 22),
 
                     // BUDGET
-                    _Title(
-                      icon: Icons
-                          .account_balance_wallet_outlined,
-                      text:
-                      'What’s your budget?',
+                    _SectionTitle(
+                      icon: Icons.account_balance_wallet_outlined,
+                      text: 'What’s your budget?',
                     ),
+                    const SizedBox(height: 10),
+                    _buildChoiceSelector(budgets, budget, (value) {
+                      setState(() => budget = value);
+                    }),
 
-                    const SizedBox(
-                      height: 12,
+                    const SizedBox(height: 22),
+
+                    // SERVINGS COUNTER
+                    _SectionTitle(
+                      icon: Icons.people_outline_rounded,
+                      text: 'How many servings?',
                     ),
-
-                    selection(
-                      budgets,
-                      budget,
-                          (value) {
-                        setState(() {
-                          budget = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(
-                      height: 26,
-                    ),
-
-                    // SERVINGS
-                    _Title(
-                      icon: Icons.people_outline,
-                      text:
-                      'How many people?',
-                    ),
-
-                    const SizedBox(
-                      height: 12,
-                    ),
-
+                    const SizedBox(height: 10),
                     Container(
-                      padding:
-                      const EdgeInsets.all(
-                        14,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                      decoration:
-                      BoxDecoration(
-                        color:
-                        colors.surface,
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          18,
-                        ),
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: colors
-                              .outline
-                              .withValues(
-                            alpha: 0.15,
-                          ),
+                          color: colors.outline.withValues(alpha: 0.10),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Expanded(
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Servings Count',
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                Text(
+                                  'Portions for your meal',
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: IconButton(
+                              onPressed: servings > 1
+                                  ? () {
+                                HapticFeedback.selectionClick();
+                                setState(() => servings--);
+                              }
+                                  : null,
+                              icon: const Icon(Icons.remove_circle_outline, size: 22),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
-                              'Servings',
-                              style:
-                              TextStyle(
-                                fontWeight:
-                                FontWeight
-                                    .w700,
+                              '$servings',
+                              style: TextStyle(
+                                color: colors.primary,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
-                          IconButton(
-                            onPressed:
-                            servings > 1
-                                ? () {
-                              setState(
-                                    () {
-                                  servings--;
-                                },
-                              );
-                            }
-                                : null,
-                            icon: const Icon(
-                              Icons
-                                  .remove_circle_outline,
-                            ),
-                          ),
-                          Text(
-                            '$servings',
-                            style:
-                            const TextStyle(
-                              fontSize: 18,
-                              fontWeight:
-                              FontWeight
-                                  .w800,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed:
-                            servings < 10
-                                ? () {
-                              setState(
-                                    () {
-                                  servings++;
-                                },
-                              );
-                            }
-                                : null,
-                            icon: const Icon(
-                              Icons
-                                  .add_circle_outline,
+                          Material(
+                            color: Colors.transparent,
+                            child: IconButton(
+                              onPressed: servings < 10
+                                  ? () {
+                                HapticFeedback.selectionClick();
+                                setState(() => servings++);
+                              }
+                                  : null,
+                              icon: const Icon(Icons.add_circle_outline, size: 22),
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 26,
-                    ),
+                    const SizedBox(height: 22),
 
                     // DIET
-                    _Title(
-                      icon:
-                      Icons.restaurant_outlined,
-                      text: 'Diet',
+                    _SectionTitle(
+                      icon: Icons.restaurant_outlined,
+                      text: 'Dietary Preference',
                     ),
+                    const SizedBox(height: 10),
+                    _buildChoiceSelector(diets, diet, (value) {
+                      setState(() => diet = value);
+                    }),
 
-                    const SizedBox(
-                      height: 12,
+                    const SizedBox(height: 22),
+
+                    // AVOID / ALLERGIES
+                    _SectionTitle(
+                      icon: Icons.remove_circle_outline_rounded,
+                      text: 'Anything to avoid?',
                     ),
-
-                    selection(
-                      diets,
-                      diet,
-                          (value) {
-                        setState(() {
-                          diet = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(
-                      height: 26,
-                    ),
-
-                    // AVOID
-                    _Title(
-                      icon: Icons
-                          .remove_circle_outline,
-                      text:
-                      'Anything to avoid?',
-                    ),
-
-                    const SizedBox(
-                      height: 12,
-                    ),
-
+                    const SizedBox(height: 10),
                     Wrap(
-                      spacing: 9,
-                      runSpacing: 9,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         'No onion',
                         'No garlic',
                         'Gluten free',
                         'Dairy free',
-                      ].map(
-                            (item) {
-                          final selected =
-                          avoid.contains(
-                            item,
-                          );
+                      ].map((item) {
+                        final selected = avoid.contains(item);
 
-                          return FilterChip(
-                            label:
-                            Text(item),
-                            selected:
-                            selected,
-                            onSelected:
-                                (value) {
-                              setState(() {
-                                if (value) {
-                                  avoid.add(
-                                    item,
-                                  );
-                                } else {
-                                  avoid.remove(
-                                    item,
-                                  );
-                                }
-                              });
-                            },
-                            selectedColor:
-                            const Color(
-                              0xFFFFE1CC,
-                            ),
-                          );
-                        },
-                      ).toList(),
+                        return FilterChip(
+                          label: Text(item),
+                          selected: selected,
+                          onSelected: (value) {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              if (value) {
+                                avoid.add(item);
+                              } else {
+                                avoid.remove(item);
+                              }
+                            });
+                          },
+                          showCheckmark: false,
+                          backgroundColor: colors.surface,
+                          selectedColor: colors.primary.withValues(alpha: 0.12),
+                          side: BorderSide(
+                            color: selected
+                                ? colors.primary
+                                : colors.outline.withValues(alpha: 0.10),
+                          ),
+                          labelStyle: TextStyle(
+                            color: selected ? colors.primary : textPrimary,
+                            fontSize: 12,
+                            fontWeight:
+                            selected ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
-                    const SizedBox(
-                      height: 26,
-                    ),
+                    const SizedBox(height: 22),
 
-                    // SPICE
-                    _Title(
-                      icon: Icons
-                          .local_fire_department_outlined,
-                      text:
-                      'How spicy?',
+                    // SPICE LEVEL
+                    _SectionTitle(
+                      icon: Icons.local_fire_department_outlined,
+                      text: 'Spice Preference',
                     ),
+                    const SizedBox(height: 10),
+                    _buildChoiceSelector(spices, spice, (value) {
+                      setState(() => spice = value);
+                    }),
 
-                    const SizedBox(
-                      height: 12,
+                    const SizedBox(height: 22),
+
+                    // SKILL LEVEL
+                    _SectionTitle(
+                      icon: Icons.school_outlined,
+                      text: 'Cooking Skill Level',
                     ),
+                    const SizedBox(height: 10),
+                    _buildChoiceSelector(skills, skill, (value) {
+                      setState(() => skill = value);
+                    }),
 
-                    selection(
-                      spices,
-                      spice,
-                          (value) {
-                        setState(() {
-                          spice = value;
-                        });
-                      },
-                    ),
+                    const SizedBox(height: 24),
 
-                    const SizedBox(
-                      height: 26,
-                    ),
-
-                    // SKILL
-                    _Title(
-                      icon:
-                      Icons.school_outlined,
-                      text:
-                      'Your cooking skill',
-                    ),
-
-                    const SizedBox(
-                      height: 12,
-                    ),
-
-                    selection(
-                      skills,
-                      skill,
-                          (value) {
-                        setState(() {
-                          skill = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(
-                      height: 25,
-                    ),
-
+                    // AI SUMMARY CARD
                     Container(
-                      padding:
-                      const EdgeInsets.all(
-                        16,
-                      ),
-                      decoration:
-                      BoxDecoration(
-                        color: colors
-                            .primary
-                            .withValues(
-                          alpha: 0.07,
-                        ),
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          18,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colors.primary.withValues(alpha: 0.12),
                         ),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons
-                                .auto_awesome_rounded,
-                            color:
-                            colors.primary,
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: colors.primary.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.auto_awesome_rounded,
+                              color: colors.primary,
+                              size: 18,
+                            ),
                           ),
-                          const SizedBox(
-                            width: 10,
-                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Gemini will use your ingredients '
-                                  'and preferences to generate '
-                                  'personalized recipes.',
+                              'TADKA AI will synthesize your chosen ingredients and preferences into personalized recipes.',
                               style: TextStyle(
-                                color:
-                                textSecondary,
-                                fontSize: 13,
+                                color: textSecondary,
+                                fontSize: 11.5,
                                 height: 1.4,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -1432,52 +1077,39 @@ class _CookingPreferencesScreenState
               ),
             ),
 
-            Padding(
-              padding:
-              const EdgeInsets.fromLTRB(
-                20,
-                10,
-                20,
-                18,
+            // Fixed Bottom CTA Container
+            Container(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                border: Border(
+                  top: BorderSide(
+                    color: colors.outline.withValues(alpha: 0.08),
+                  ),
+                ),
               ),
               child: SizedBox(
                 width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed:
-                  generateRecipes,
-                  style:
-                  ElevatedButton.styleFrom(
-                    backgroundColor:
-                    colors.primary,
-                    foregroundColor:
-                    Colors.white,
-                    elevation: 0,
-                    shape:
-                    RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(
-                        18,
-                      ),
+                height: 48,
+                child: FilledButton(
+                  onPressed: generateRecipes,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: const Row(
-                    mainAxisAlignment:
-                    MainAxisAlignment
-                        .center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons
-                            .auto_awesome_rounded,
-                        size: 19,
-                      ),
+                      Icon(Icons.auto_awesome_rounded, size: 18),
                       SizedBox(width: 8),
                       Text(
                         'GENERATE WITH AI',
                         style: TextStyle(
-                          fontWeight:
-                          FontWeight.w800,
-                          letterSpacing: 0.3,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -1493,11 +1125,10 @@ class _CookingPreferencesScreenState
 }
 
 // ============================================================================
-// ANIMATED DOT
+// ANIMATED DOT WIDGET
 // ============================================================================
 
-class _AnimatedDot
-    extends StatelessWidget {
+class _AnimatedDot extends StatelessWidget {
   final AnimationController controller;
   final int delay;
   final Color color;
@@ -1513,30 +1144,15 @@ class _AnimatedDot
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
-        final value =
-            (controller.value +
-                delay / 1800) %
-                1.0;
-
-        final opacity = 0.35 +
-            (value < 0.5
-                ? value
-                : 1 - value);
+        final value = (controller.value + delay / 1800) % 1.0;
+        final opacity = 0.35 + (value < 0.5 ? value : 1 - value);
 
         return Container(
           width: 8,
           height: 8,
-          decoration:
-          BoxDecoration(
-            color: color.withValues(
-              alpha:
-              opacity.clamp(
-                0.35,
-                1.0,
-              ),
-            ),
-            shape:
-            BoxShape.circle,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: opacity.clamp(0.35, 1.0)),
+            shape: BoxShape.circle,
           ),
         );
       },
@@ -1545,40 +1161,35 @@ class _AnimatedDot
 }
 
 // ============================================================================
-// TITLE
+// SECTION TITLE WIDGET
 // ============================================================================
 
-class _Title
-    extends StatelessWidget {
+class _SectionTitle extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  const _Title({
+  const _SectionTitle({
     required this.icon,
     required this.text,
   });
 
   @override
   Widget build(BuildContext context) {
-    final primary =
-        Theme.of(context)
-            .colorScheme
-            .primary;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Row(
       children: [
         Icon(
           icon,
-          size: 20,
+          size: 18,
           color: primary,
         ),
         const SizedBox(width: 8),
         Text(
           text,
           style: const TextStyle(
-            fontSize: 16,
-            fontWeight:
-            FontWeight.w800,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],

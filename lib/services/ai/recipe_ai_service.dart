@@ -47,10 +47,17 @@ class RecipeAIService {
   // ===========================================================================
   // GENERATE RECIPES FROM INGREDIENTS
   // ===========================================================================
+  //
+  // [excludeNames] is optional and is used by the "Generate more" feature on
+  // the results screen. Any dish names passed here are explicitly excluded in
+  // the prompt so the user keeps getting fresh ideas instead of duplicates.
+  // Existing callers can ignore it entirely.
+  // ===========================================================================
 
   Future<List<Recipe>> generateRecipes({
     required List<String> ingredients,
     required CookingPreferences preferences,
+    List<String> excludeNames = const [],
   }) async {
     try {
       if (ingredients.isEmpty) {
@@ -78,6 +85,7 @@ class RecipeAIService {
       final prompt = _buildPrompt(
         ingredients: ingredients,
         preferences: preferences,
+        excludeNames: excludeNames,
       );
 
       // -----------------------------------------------------------------------
@@ -156,11 +164,16 @@ class RecipeAIService {
   // This method intentionally does NOT use CookingPreferences because this
   // flow starts directly from the Home search.
   //
+  // [recipeCount] defaults to 1 so existing behaviour is identical. The
+  // "Generate more" button passes a larger number to fetch extra variations.
+  //
   // ===========================================================================
 
   Future<List<Recipe>> generateRecipeByName(
-      String dishRequest,
-      ) async {
+      String dishRequest, {
+        List<String> excludeNames = const [],
+        int recipeCount = 1,
+      }) async {
     final request = dishRequest.trim();
 
     if (request.isEmpty) {
@@ -186,8 +199,11 @@ class RecipeAIService {
       // 2. Build dish-search prompt
       // -----------------------------------------------------------------------
 
-      final prompt =
-      _buildDishRequestPrompt(request);
+      final prompt = _buildDishRequestPrompt(
+        request,
+        excludeNames: excludeNames,
+        recipeCount: recipeCount < 1 ? 1 : recipeCount,
+      );
 
       // -----------------------------------------------------------------------
       // 3. Call Gemini
@@ -1013,12 +1029,48 @@ class RecipeAIService {
   }
 
   // ===========================================================================
+  // EXCLUDE BLOCK (used by "Generate more")
+  // ===========================================================================
+
+  String _buildExcludeBlock(
+      List<String> excludeNames,
+      ) {
+    final cleaned = excludeNames
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (cleaned.isEmpty) {
+      return '';
+    }
+
+    final list = cleaned
+        .map((name) => '- $name')
+        .join('\n');
+
+    return '''
+
+ALREADY SUGGESTED — DO NOT REPEAT:
+
+$list
+
+The user has already seen the dishes listed above.
+Every recipe you return now MUST be a genuinely different dish.
+Do not return the same dish under a slightly different name.
+Do not return a trivial variation of the same dish.
+Aim for real variety in cooking style, texture and flavour.
+''';
+  }
+
+  // ===========================================================================
   // INGREDIENT RECIPE PROMPT
   // ===========================================================================
 
   String _buildPrompt({
     required List<String> ingredients,
     required CookingPreferences preferences,
+    List<String> excludeNames = const [],
   }) {
     final ingredientsText = ingredients
         .map(
@@ -1035,6 +1087,9 @@ class RecipeAIService {
     preferences.avoid.isEmpty
         ? 'None'
         : preferences.avoid.join(', ');
+
+    final excludeBlock =
+    _buildExcludeBlock(excludeNames);
 
     return '''
 You are TADKA AI, an intelligent Indian cooking assistant.
@@ -1054,7 +1109,7 @@ COOKING PREFERENCES:
 - Avoid: $avoidText
 - Spice level: ${preferences.spiceLevel}
 - Cooking skill: ${preferences.skill}
-
+$excludeBlock
 RECIPE REQUIREMENTS:
 
 1. Generate exactly 3 different recipes.
@@ -1167,8 +1222,25 @@ IMPORTANT:
   // ===========================================================================
 
   String _buildDishRequestPrompt(
-      String request,
-      ) {
+      String request, {
+        List<String> excludeNames = const [],
+        int recipeCount = 1,
+      }) {
+    final excludeBlock =
+    _buildExcludeBlock(excludeNames);
+
+    final countWord =
+    recipeCount == 1 ? 'ONE' : '$recipeCount';
+
+    final arrayRule = recipeCount == 1
+        ? 'Return an ARRAY containing exactly ONE recipe object.'
+        : 'Return an ARRAY containing exactly $recipeCount recipe objects.';
+
+    final finalRule = recipeCount == 1
+        ? '- Return exactly ONE recipe.'
+        : '- Return exactly $recipeCount recipes.\n'
+        '- Each recipe must be a clearly different dish.';
+
     return '''
 You are TADKA AI, an intelligent cooking assistant.
 
@@ -1192,7 +1264,7 @@ recognizable and practical version of that dish.
 
 If the user gives a vague request, choose a suitable recipe
 that matches what the user asked for.
-
+$excludeBlock
 IMPORTANT:
 - Do not ask follow-up questions.
 - Make reasonable assumptions when information is missing.
@@ -1225,11 +1297,11 @@ NOT:
 This is important because TADKA AI uses the recipe name to look
 for a matching dish image in its image library.
 
-Generate exactly ONE recipe.
+Generate exactly $countWord recipe(s).
 
-Return an ARRAY containing exactly ONE recipe object.
+$arrayRule
 
-The recipe MUST have exactly these fields:
+Each recipe MUST have exactly these fields:
 
 [
   {
@@ -1290,7 +1362,7 @@ IMPORTANT:
 - warnings should only contain genuinely relevant cooking warnings.
 - Keep descriptions concise.
 - Keep steps clear and practical.
-- Return exactly ONE recipe.
+$finalRule
 ''';
   }
 
