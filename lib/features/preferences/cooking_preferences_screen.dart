@@ -68,6 +68,7 @@ class _CookingPreferencesScreenState extends State<CookingPreferencesScreen>
     'Vegan',
     'Eggless',
     'Jain',
+    'Non-veg',
   ];
 
   final List<String> spices = [

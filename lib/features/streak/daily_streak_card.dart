@@ -62,14 +62,26 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(
-            message,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline_rounded,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       );
@@ -83,107 +95,150 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
       builder: (_) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(28),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: colors.outline.withValues(alpha: 0.12),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colors.primary,
-                        colors.primary.withValues(alpha: 0.75),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.30),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.local_fire_department_rounded,
-                      color: Colors.white,
-                      size: 38,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${reward.currentStreak} Day Streak!',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Text(
-                      '+${reward.coins}',
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.monetization_on_rounded,
-                      color: colors.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'COINS ADDED',
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            colors.primary,
+                            colors.primary.withValues(alpha: 0.8),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primary.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Colors.white,
+                          size: 42,
+                        ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 20),
+                Text(
+                  '${reward.currentStreak} Day Streak!',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
                 const SizedBox(height: 10),
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '+${reward.coins}',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.monetization_on_rounded,
+                        color: colors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'COINS ADDED',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
                 Text(
                   'Keep logging in daily to reach bigger milestone rewards.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: colors.onSurfaceVariant,
-                    fontSize: 12,
-                    height: 1.4,
+                    fontSize: 13,
+                    height: 1.45,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  height: 46,
+                  height: 50,
                   child: FilledButton(
                     onPressed: () => Navigator.pop(context),
                     style: FilledButton.styleFrom(
+                      elevation: 2,
+                      shadowColor: colors.primary.withValues(alpha: 0.3),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: const Text(
                       'Awesome!',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                        fontSize: 15,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ),
@@ -223,25 +278,25 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                colors.primary.withValues(alpha: 0.08),
                 colors.surface,
+                colors.primary.withValues(alpha: 0.05),
               ],
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: colors.outline.withValues(alpha: 0.12),
+              color: colors.outline.withValues(alpha: 0.14),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: colors.shadow.withValues(alpha: 0.04),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -254,17 +309,22 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
               Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.12),
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.primary.withValues(alpha: 0.20),
+                          colors.primary.withValues(alpha: 0.08),
+                        ],
+                      ),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Icon(
                         Icons.local_fire_department_rounded,
                         color: colors.primary,
-                        size: 22,
+                        size: 24,
                       ),
                     ),
                   ),
@@ -277,9 +337,9 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                           'DAILY STREAK',
                           style: TextStyle(
                             color: colors.primary,
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 1.0,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -291,23 +351,34 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                               : '$current day${current == 1 ? '' : 's'} streak active 🔥'),
                           style: TextStyle(
                             color: colors.onSurface,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: claimedToday
-                          ? colors.primary.withValues(alpha: 0.08)
+                          ? colors.primary.withValues(alpha: 0.10)
                           : colors.primary,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: claimedToday
+                          ? []
+                          : [
+                        BoxShadow(
+                          color: colors.primary.withValues(alpha: 0.30),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -316,7 +387,7 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                           const Icon(
                             Icons.monetization_on_rounded,
                             color: Colors.white,
-                            size: 12,
+                            size: 13,
                           ),
                           const SizedBox(width: 4),
                         ],
@@ -324,9 +395,9 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                           claimedToday ? 'CLAIMED' : '+$nextReward COINS',
                           style: TextStyle(
                             color: claimedToday ? colors.primary : Colors.white,
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                            letterSpacing: 0.6,
                           ),
                         ),
                       ],
@@ -336,28 +407,28 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
               ),
 
               if (streakBroken) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Container(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: colors.error.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: colors.error.withValues(alpha: 0.20),
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline_rounded,
-                          size: 14, color: colors.error),
-                      const SizedBox(width: 8),
+                      Icon(Icons.warning_amber_rounded,
+                          size: 16, color: colors.error),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'A day was missed. Claim today to begin a new streak!',
                           style: TextStyle(
                             color: colors.error,
-                            fontSize: 11,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -367,7 +438,7 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                 ),
               ],
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ============================================================
               // 7 DAY REWARD TRACK
@@ -397,7 +468,7 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ============================================================
               // CLAIM BUTTON
@@ -405,33 +476,35 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
               if (!claimedToday)
                 SizedBox(
                   width: double.infinity,
-                  height: 44,
+                  height: 48,
                   child: FilledButton.icon(
                     onPressed: _claiming ? null : _claimReward,
                     icon: _claiming
                         ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 2.2,
                         color: Colors.white,
                       ),
                     )
                         : const Icon(
                       Icons.local_fire_department_rounded,
-                      size: 18,
+                      size: 20,
                     ),
                     label: Text(
-                      _claiming ? 'Claiming...' : 'Claim +$nextReward Coins',
+                      _claiming ? 'Claiming Reward...' : 'Claim +$nextReward Coins',
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.3,
                       ),
                     ),
                     style: FilledButton.styleFrom(
+                      elevation: 3,
+                      shadowColor: colors.primary.withValues(alpha: 0.35),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
@@ -439,10 +512,13 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
               else
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: colors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.12),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -450,14 +526,14 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                       Icon(
                         Icons.check_circle_rounded,
                         color: colors.primary,
-                        size: 16,
+                        size: 18,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Text(
-                        'Today\'s reward collected',
+                        "Today's reward collected",
                         style: TextStyle(
                           color: colors.primary,
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -465,7 +541,7 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                   ),
                 ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               Center(
                 child: Text(
@@ -475,7 +551,7 @@ class _DailyStreakCardState extends State<DailyStreakCard> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: colors.onSurfaceVariant,
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -519,19 +595,20 @@ class _StreakDay extends StatelessWidget {
             color: active
                 ? primary
                 : (completed ? colors.onSurface : colors.onSurfaceVariant),
-            fontSize: 10,
+            fontSize: 10.5,
             fontWeight: active || completed ? FontWeight.w900 : FontWeight.w600,
           ),
         ),
         const SizedBox(height: 6),
         AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 36,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          height: 40,
           decoration: BoxDecoration(
             color: completed
                 ? primary
                 : active
-                ? primary.withValues(alpha: 0.12)
+                ? primary.withValues(alpha: 0.15)
                 : colors.surface,
             shape: BoxShape.circle,
             border: Border.all(
@@ -539,45 +616,53 @@ class _StreakDay extends StatelessWidget {
                   ? primary
                   : completed
                   ? primary
-                  : colors.outline.withValues(alpha: 0.15),
+                  : colors.outline.withValues(alpha: 0.16),
               width: active ? 2 : 1,
             ),
             boxShadow: active
                 ? [
               BoxShadow(
-                color: primary.withValues(alpha: 0.25),
-                blurRadius: 8,
+                color: primary.withValues(alpha: 0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              )
+            ]
+                : (completed
+                ? [
+              BoxShadow(
+                color: primary.withValues(alpha: 0.18),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
               )
             ]
-                : null,
+                : null),
           ),
           child: Center(
             child: completed
                 ? const Icon(
               Icons.check_rounded,
               color: Colors.white,
-              size: 16,
+              size: 18,
             )
                 : active
                 ? Icon(
               Icons.local_fire_department_rounded,
               color: primary,
-              size: 16,
+              size: 18,
             )
                 : Icon(
               Icons.lock_outline_rounded,
-              color: colors.onSurfaceVariant,
-              size: 13,
+              color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+              size: 14,
             ),
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 6),
         Text(
           '+$reward',
           style: TextStyle(
             color: completed || active ? primary : colors.onSurfaceVariant,
-            fontSize: 9.5,
+            fontSize: 10,
             fontWeight:
             completed || active ? FontWeight.w900 : FontWeight.w600,
           ),

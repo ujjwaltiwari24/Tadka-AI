@@ -11,7 +11,7 @@ class RewardedAdService {
   // Google test rewarded ad unit for Android development.
   // Replace ONLY when preparing the production release.
   static const String testAdUnitId =
-      'ca-app-pub-8115235789134813/6255571053';
+      'ca-app-pub-8115235789134813/6683974130';
 
   RewardedAd? _rewardedAd;
   bool _isLoading = false;
@@ -40,6 +40,13 @@ class RewardedAdService {
         onAdFailedToLoad: (error) {
           _rewardedAd = null;
           _isLoading = false;
+
+          print('========== TADKA REWARDED AD FAILED ==========');
+          print('Domain: ${error.domain}');
+          print('Code: ${error.code}');
+          print('Message: ${error.message}');
+          print('ResponseInfo: ${error.responseInfo}');
+          print('===============================================');
 
           if (!completer.isCompleted) {
             completer.complete();

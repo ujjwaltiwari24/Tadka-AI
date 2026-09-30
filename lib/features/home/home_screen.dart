@@ -40,14 +40,12 @@ class _RecentDish {
     final data = document.data() ?? {};
 
     String imageUrl = '';
-
     final primaryImage = data['primaryImageUrl']?.toString().trim() ?? '';
 
     if (primaryImage.isNotEmpty) {
       imageUrl = primaryImage;
     } else {
       final imageUrls = data['imageUrls'];
-
       if (imageUrls is List && imageUrls.isNotEmpty) {
         imageUrl = imageUrls.first.toString().trim();
       }
@@ -68,7 +66,6 @@ class _RecentDish {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedQuickOption = '';
-
   List<_RecentDish> _recentDishes = [];
   bool _recentDishesLoading = true;
 
@@ -79,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ==========================================================================
-  // NAVIGATION
+  // NAVIGATION & PREFERENCE FILTER LOGIC
   // ==========================================================================
 
   void _openIngredients() {
@@ -148,9 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (sheetContext) {
         final colors = Theme.of(sheetContext).colorScheme;
@@ -162,87 +157,80 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.08),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: colors.primary.withValues(alpha: 0.14),
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: photoUrl.isNotEmpty
-                          ? Image.network(
-                        photoUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.person_rounded,
-                          color: colors.primary,
-                          size: 26,
-                        ),
-                      )
-                          : Icon(
-                        Icons.person_rounded,
-                        color: colors.primary,
-                        size: 26,
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.1),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: colors.onSurface,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          if (email.isNotEmpty) ...[
-                            const SizedBox(height: 2),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: colors.primary.withValues(alpha: 0.12),
+                        backgroundImage:
+                        photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                        child: photoUrl.isEmpty
+                            ? Icon(Icons.person_rounded,
+                            color: colors.primary, size: 30)
+                            : null,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              email,
+                              displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: colors.onSurfaceVariant,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
+                                color: colors.onSurface,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
+                            if (email.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                email,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: colors.onSurfaceVariant,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _MenuTile(
                   icon: Icons.bookmark_border_rounded,
                   title: 'Saved Recipes',
-                  subtitle: 'View and manage your cookbook',
+                  subtitle: 'View and manage your personal cookbook',
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _openProfile();
                   },
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 _MenuTile(
                   icon: Icons.gavel_rounded,
                   title: 'Legal & Privacy',
-                  subtitle: 'Terms of service and policies',
+                  subtitle: 'Terms of service, guidelines and policies',
                   onTap: () {
                     Navigator.pop(sheetContext);
                     Navigator.push(
@@ -253,11 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 _MenuTile(
                   icon: Icons.logout_rounded,
                   title: 'Sign Out',
                   subtitle: 'Disconnect from your TADKA account',
+                  isDestructive: true,
                   onTap: () async {
                     Navigator.pop(sheetContext);
                     await AuthService.instance.signOut();
@@ -282,6 +271,12 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (option) {
       case 'Quick':
         _openIngredientsWithPreference(initialTime: '20 min');
+        break;
+      case 'Veg':
+        _openIngredientsWithPreference(initialDiet: 'Veg');
+        break;
+      case 'Non-Veg':
+        _openIngredientsWithPreference(initialDiet: 'Non-Veg');
         break;
       case 'Vegan':
         _openIngredientsWithPreference(initialDiet: 'Vegan');
@@ -339,9 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (error) {
       debugPrint('Recent dishes error: $error');
-
       if (!mounted) return;
-
       setState(() {
         _recentDishesLoading = false;
       });
@@ -368,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (sheetContext) {
         final colors = Theme.of(sheetContext).colorScheme;
@@ -380,10 +373,10 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const _BottomSheetHeader(
-                  title: 'More Features',
-                  subtitle: 'TADKA Culinary Suite',
+                  title: 'Culinary Suite',
+                  subtitle: 'Tools, saved collections & features',
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -393,27 +386,27 @@ class _HomeScreenState extends State<HomeScreen> {
                         _MenuTile(
                           icon: Icons.menu_book_rounded,
                           title: 'Cookbook Library',
-                          subtitle: 'Explore saved dishes & collections',
+                          subtitle: 'Explore saved dishes & custom collections',
                           onTap: () {
                             Navigator.pop(sheetContext);
                             _openCookbook();
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         _MenuTile(
                           icon: Icons.bookmark_outline_rounded,
                           title: 'Saved Recipes',
-                          subtitle: 'View your saved favorite recipes',
+                          subtitle: 'View your favorite unlocked recipes',
                           onTap: () {
                             Navigator.pop(sheetContext);
                             _openProfile();
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         _MenuTile(
                           icon: Icons.gavel_rounded,
                           title: 'Legal & Privacy',
-                          subtitle: 'Privacy, terms, and guidelines',
+                          subtitle: 'Privacy policy, terms & legal information',
                           onTap: () {
                             Navigator.pop(sheetContext);
                             Navigator.push(
@@ -424,11 +417,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         _MenuTile(
                           icon: Icons.info_outline_rounded,
                           title: 'About TADKA AI',
-                          subtitle: 'Learn about your AI cooking assistant',
+                          subtitle: 'Learn about your intelligent cooking companion',
                           onTap: () {
                             Navigator.pop(sheetContext);
                             _showAboutDialog();
@@ -438,24 +431,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: TextButton(
+                  height: 48,
+                  child: OutlinedButton(
                     onPressed: () => Navigator.pop(sheetContext),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      side: BorderSide(
+                        color: colors.outline.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Text(
                       'CLOSE',
                       style: TextStyle(
                         color: colors.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
                       ),
                     ),
                   ),
@@ -475,18 +471,26 @@ class _HomeScreenState extends State<HomeScreen> {
         final colors = Theme.of(context).colorScheme;
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
           title: Row(
             children: [
-              Icon(
-                Icons.local_fire_department_rounded,
-                color: colors.primary,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.local_fire_department_rounded,
+                  color: colors.primary,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               const Text(
                 'TADKA AI',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
               ),
             ],
           ),
@@ -494,11 +498,16 @@ class _HomeScreenState extends State<HomeScreen> {
             'Your intelligent AI culinary companion.\n\n'
                 'Craft custom step-by-step recipes from ingredients you already have, '
                 'or search for any dish worldwide.',
-            style: TextStyle(fontSize: 13, height: 1.4),
+            style: TextStyle(fontSize: 13.5, height: 1.5),
           ),
           actions: [
-            TextButton(
+            FilledButton(
               onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('GOT IT',
                   style: TextStyle(fontWeight: FontWeight.w800)),
             ),
@@ -516,12 +525,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     final textPrimary = colors.onSurface;
     final textSecondary = colors.onSurfaceVariant;
 
     final border = colors.outline.withValues(
-      alpha: theme.brightness == Brightness.dark ? 0.20 : 0.08,
+      alpha: isDark ? 0.18 : 0.08,
     );
 
     return Scaffold(
@@ -540,7 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate(
                     [
-                      // 1. TOP HEADER BAR
+                      // 1. TOP BAR
                       _TopBar(
                         textPrimary: textPrimary,
                         primary: colors.primary,
@@ -552,18 +562,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         onMore: _showMoreMenu,
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                      // 2. HERO GREETING
+                      // 2. GREETING
                       _Greeting(
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         primary: colors.primary,
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
 
-                      // 3. HIGHLIGHTED PROMINENT DISH SEARCH BAR
+                      // 3. SEARCH BAR
                       _SearchDishCard(
                         primary: colors.primary,
                         surface: colors.surface,
@@ -573,20 +583,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: _openDishSearch,
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
 
-                      // 4. PRIMARY HERO RECIPE GENERATOR
+                      // 4. PANTRY GENERATOR HERO CARD
                       _HeroGenerateRecipeCard(
                         primary: colors.primary,
                         onTap: _openIngredients,
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
 
-                      // 5. STREAK & COINS CARD
+                      // 5. STREAK CARD
                       const _DailyStreakHomeButton(),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
                       // 6. QUICK COOKING MODES
                       _SectionHeader(
@@ -596,7 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         textSecondary: textSecondary,
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
                       _QuickOptions(
                         selected: _selectedQuickOption,
@@ -608,7 +618,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onSelect: _openQuickPick,
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
                       // 7. RECIPE DISCOVERY
                       _RecentDishesSection(
@@ -619,10 +629,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         border: border,
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
-                        onDishTap: _openRecentDish,
+                        onTap: _openRecentDish,
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
                       // 8. KITCHEN SHORTCUTS
                       _SectionHeader(
@@ -632,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         textSecondary: textSecondary,
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
                       _FeatureList(
                         primary: colors.primary,
@@ -644,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onOpenCookbook: _openCookbook,
                       ),
 
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 32),
 
                       // 9. FOOTER
                       _HomeFooter(
@@ -693,33 +703,19 @@ class _TopBar extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                primary,
-                Color.lerp(primary, Colors.black, 0.22) ?? primary,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: primary.withValues(alpha: 0.25),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            color: primary,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
             Icons.local_fire_department_rounded,
             color: Colors.white,
-            size: 20,
+            size: 22,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -727,18 +723,18 @@ class _TopBar extends StatelessWidget {
               'TADKA',
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 1.0,
+                letterSpacing: 1.2,
               ),
             ),
             Text(
               'AI CULINARY',
               style: TextStyle(
-                color: textPrimary.withValues(alpha: 0.45),
-                fontSize: 7.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.4,
+                color: primary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.6,
               ),
             ),
           ],
@@ -749,27 +745,27 @@ class _TopBar extends StatelessWidget {
           textPrimary: textPrimary,
           onTap: onCookbook,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         _HeaderIconButton(
           icon: Icons.more_horiz_rounded,
           textPrimary: textPrimary,
           onTap: onMore,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onProfile,
             onLongPress: onProfileLongPress,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: textPrimary.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: textPrimary.withValues(alpha: 0.10),
+                  color: textPrimary.withValues(alpha: 0.12),
                 ),
               ),
               clipBehavior: Clip.antiAlias,
@@ -815,13 +811,13 @@ class _HeaderIconButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: textPrimary.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: textPrimary.withValues(alpha: 0.08),
             ),
@@ -829,7 +825,7 @@ class _HeaderIconButton extends StatelessWidget {
           child: Icon(
             icon,
             color: textPrimary.withValues(alpha: 0.85),
-            size: 18,
+            size: 19,
           ),
         ),
       ),
@@ -867,21 +863,21 @@ class _Greeting extends StatelessWidget {
         Row(
           children: [
             Container(
-              width: 6,
-              height: 6,
+              width: 7,
+              height: 7,
               decoration: BoxDecoration(
                 color: primary,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               greeting.toUpperCase(),
               style: TextStyle(
                 color: primary,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.0,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
               ),
             ),
           ],
@@ -891,18 +887,18 @@ class _Greeting extends StatelessWidget {
           'What are you\ncooking today?',
           style: TextStyle(
             color: textPrimary,
-            fontSize: 26,
+            fontSize: 28,
             height: 1.1,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.6,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
-          'Search any dish or generate custom recipes from pantry items.',
+          'Search any dish worldwide or generate custom recipes from pantry items.',
           style: TextStyle(
             color: textSecondary,
-            fontSize: 11.5,
+            fontSize: 12,
             height: 1.4,
             fontWeight: FontWeight.w500,
           ),
@@ -913,7 +909,7 @@ class _Greeting extends StatelessWidget {
 }
 
 // ============================================================================
-// PROMINENT HIGHLIGHTED SEARCH DISH CARD
+// SEARCH DISH CARD
 // ============================================================================
 
 class _SearchDishCard extends StatelessWidget {
@@ -939,44 +935,30 @@ class _SearchDishCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: BoxDecoration(
-            color: primary.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
+            color: surface,
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: primary.withValues(alpha: 0.28),
-              width: 1.5,
+              color: primary.withValues(alpha: 0.25),
+              width: 1.4,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: primary.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: primary,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.30),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.search_rounded,
                   color: Colors.white,
-                  size: 20,
+                  size: 21,
                 ),
               ),
               const SizedBox(width: 12),
@@ -988,16 +970,16 @@ class _SearchDishCard extends StatelessWidget {
                       'Search Recipe or Dish',
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 2),
                     Text(
                       'Try "Paneer Tikka", "Pasta", or "Dal Tadka"',
                       style: TextStyle(
                         color: textSecondary,
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1005,16 +987,17 @@ class _SearchDishCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: primary.withValues(alpha: 0.12),
+                  color: primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'SEARCH',
+                  'HOT',
                   style: TextStyle(
                     color: primary,
-                    fontSize: 8.5,
+                    fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.6,
                   ),
@@ -1044,30 +1027,16 @@ class _HeroGenerateRecipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: primary,
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                primary,
-                Color.lerp(primary, Colors.black, 0.18) ?? primary,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: primary.withValues(alpha: 0.28),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(22),
+            color: primary,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1075,16 +1044,16 @@ class _HeroGenerateRecipeCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.kitchen_rounded,
                       color: Colors.white,
-                      size: 20,
+                      size: 22,
                     ),
                   ),
                   const Spacer(),
@@ -1094,11 +1063,8 @@ class _HeroGenerateRecipeCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.20),
-                      ),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1106,14 +1072,14 @@ class _HeroGenerateRecipeCard extends StatelessWidget {
                         Icon(
                           Icons.auto_awesome_rounded,
                           color: Colors.white,
-                          size: 11,
+                          size: 12,
                         ),
                         SizedBox(width: 4),
                         Text(
                           'AI POWERED',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 8.5,
+                            fontSize: 9,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.8,
                           ),
@@ -1123,66 +1089,58 @@ class _HeroGenerateRecipeCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               const Text(
                 'Cook with What You Have',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Transform your current pantry items into delicious, custom step-by-step recipes.',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 11.5,
-                  height: 1.35,
+                  color: Colors.white.withValues(alpha: 0.88),
+                  fontSize: 12,
+                  height: 1.4,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 11,
+                  vertical: 12,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      width: 26,
-                      height: 26,
+                      width: 28,
+                      height: 28,
                       decoration: BoxDecoration(
-                        color: primary.withValues(alpha: 0.10),
+                        color: primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.add_rounded,
                         color: primary,
-                        size: 18,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Select Ingredients & Cook',
                         style: TextStyle(
                           color: primary,
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -1190,7 +1148,7 @@ class _HeroGenerateRecipeCard extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward_rounded,
                       color: primary,
-                      size: 18,
+                      size: 20,
                     ),
                   ],
                 ),
@@ -1229,17 +1187,17 @@ class _SectionHeader extends StatelessWidget {
           title,
           style: TextStyle(
             color: textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
             letterSpacing: -0.2,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         Text(
           subtitle,
           style: TextStyle(
             color: textSecondary,
-            fontSize: 10.5,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1280,6 +1238,16 @@ class _QuickOptions extends StatelessWidget {
       icon: Icons.bolt_rounded,
       ),
       (
+      name: 'Veg',
+      subtitle: 'Pure vegetarian',
+      icon: Icons.grass_rounded,
+      ),
+      (
+      name: 'Non-Veg',
+      subtitle: 'Meat & poultry',
+      icon: Icons.set_meal_rounded,
+      ),
+      (
       name: 'Vegan',
       subtitle: 'Plant-based',
       icon: Icons.eco_outlined,
@@ -1297,32 +1265,32 @@ class _QuickOptions extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 72,
+      height: 76,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final option = options[index];
           final isSelected = selected == option.name;
 
           return Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             child: InkWell(
               onTap: () => onSelect(option.name),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                width: 110,
-                padding: const EdgeInsets.all(10),
+                width: 118,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected ? primary.withValues(alpha: 0.10) : surface,
-                  borderRadius: BorderRadius.circular(14),
+                  color: isSelected ? primary.withValues(alpha: 0.1) : surface,
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected ? primary : border,
-                    width: isSelected ? 1.5 : 1,
+                    width: isSelected ? 1.6 : 1,
                   ),
                 ),
                 child: Column(
@@ -1333,14 +1301,14 @@ class _QuickOptions extends StatelessWidget {
                         Icon(
                           option.icon,
                           color: isSelected ? primary : textSecondary,
-                          size: 16,
+                          size: 18,
                         ),
                         const Spacer(),
                         if (isSelected)
                           Icon(
                             Icons.check_circle_rounded,
                             color: primary,
-                            size: 13,
+                            size: 14,
                           ),
                       ],
                     ),
@@ -1349,7 +1317,7 @@ class _QuickOptions extends StatelessWidget {
                       option.name,
                       style: TextStyle(
                         color: isSelected ? primary : textPrimary,
-                        fontSize: 11.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1384,7 +1352,7 @@ class _RecentDishesSection extends StatelessWidget {
   final Color border;
   final Color textPrimary;
   final Color textSecondary;
-  final ValueChanged<String> onDishTap;
+  final ValueChanged<String> onTap;
 
   const _RecentDishesSection({
     required this.dishes,
@@ -1394,7 +1362,7 @@ class _RecentDishesSection extends StatelessWidget {
     required this.border,
     required this.textPrimary,
     required this.textSecondary,
-    required this.onDishTap,
+    required this.onTap,
   });
 
   @override
@@ -1416,28 +1384,28 @@ class _RecentDishesSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
-                  vertical: 4,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color: primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${dishes.length} DISHES',
                   style: TextStyle(
                     color: primary,
                     fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
                   ),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         if (loading)
           SizedBox(
-            height: 175,
+            height: 180,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -1461,7 +1429,7 @@ class _RecentDishesSection extends StatelessWidget {
           )
         else
           SizedBox(
-            height: 175,
+            height: 180,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -1475,7 +1443,7 @@ class _RecentDishesSection extends StatelessWidget {
                   border: border,
                   textPrimary: textPrimary,
                   textSecondary: textSecondary,
-                  onTap: onDishTap,
+                  onTap: onTap,
                 );
               },
             ),
@@ -1511,10 +1479,10 @@ class _RecentDishCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 146,
+      width: 150,
       child: Material(
         color: surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
@@ -1524,13 +1492,13 @@ class _RecentDishCard extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(color: border),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  height: 98,
+                  height: 100,
                   width: double.infinity,
                   child: Stack(
                     fit: StackFit.expand,
@@ -1549,26 +1517,6 @@ class _RecentDishCard extends StatelessWidget {
                         )
                       else
                         _DishPlaceholder(primary: primary),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 45,
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.35),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -1584,11 +1532,11 @@ class _RecentDishCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: textPrimary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 2),
                         Text(
                           dish.category,
                           maxLines: 1,
@@ -1607,7 +1555,7 @@ class _RecentDishCard extends StatelessWidget {
                               style: TextStyle(
                                 color: primary,
                                 fontSize: 9,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             const SizedBox(width: 2),
@@ -1643,29 +1591,12 @@ class _DishPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            primary.withValues(alpha: 0.08),
-            primary.withValues(alpha: 0.02),
-          ],
-        ),
-      ),
+      color: primary.withValues(alpha: 0.08),
       child: Center(
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.restaurant_rounded,
-            color: primary.withValues(alpha: 0.55),
-            size: 18,
-          ),
+        child: Icon(
+          Icons.restaurant_rounded,
+          color: primary.withValues(alpha: 0.6),
+          size: 22,
         ),
       ),
     );
@@ -1680,7 +1611,7 @@ class _DishImageLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: primary.withValues(alpha: 0.05),
+      color: primary.withValues(alpha: 0.04),
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
@@ -1707,17 +1638,17 @@ class _RecentDishSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 146,
+      width: 150,
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           Container(
-            height: 98,
+            height: 100,
             width: double.infinity,
             color: Colors.black.withValues(alpha: 0.04),
           ),
@@ -1726,11 +1657,11 @@ class _RecentDishSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SkeletonLine(width: 90, height: 9),
+                _SkeletonLine(width: 90, height: 10),
                 const SizedBox(height: 5),
-                _SkeletonLine(width: 60, height: 7),
-                const SizedBox(height: 12),
-                _SkeletonLine(width: 70, height: 7),
+                _SkeletonLine(width: 60, height: 8),
+                const SizedBox(height: 14),
+                _SkeletonLine(width: 70, height: 8),
               ],
             ),
           ),
@@ -1756,7 +1687,7 @@ class _SkeletonLine extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
       ),
     );
   }
@@ -1788,14 +1719,14 @@ class _EmptyRecentDishes extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: border),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
@@ -1803,7 +1734,7 @@ class _EmptyRecentDishes extends StatelessWidget {
             child: Icon(
               Icons.restaurant_menu_rounded,
               color: primary,
-              size: 20,
+              size: 22,
             ),
           ),
           const SizedBox(width: 12),
@@ -1815,8 +1746,8 @@ class _EmptyRecentDishes extends StatelessWidget {
                   'Your gallery is updating',
                   style: TextStyle(
                     color: textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1824,7 +1755,7 @@ class _EmptyRecentDishes extends StatelessWidget {
                   'Recommended dishes will appear here automatically.',
                   style: TextStyle(
                     color: textSecondary,
-                    fontSize: 10.5,
+                    fontSize: 11,
                     height: 1.3,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1924,21 +1855,21 @@ class _FeatureTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: surface,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: border),
           ),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
@@ -1946,7 +1877,7 @@ class _FeatureTile extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: primary,
-                  size: 18,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1958,16 +1889,16 @@ class _FeatureTile extends StatelessWidget {
                       title,
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 12.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(
                         color: textSecondary,
-                        fontSize: 10,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1976,8 +1907,8 @@ class _FeatureTile extends StatelessWidget {
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: textSecondary.withValues(alpha: 0.5),
-                size: 11,
+                color: textSecondary.withValues(alpha: 0.4),
+                size: 12,
               ),
             ],
           ),
@@ -2006,38 +1937,38 @@ class _HomeFooter extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 28,
+            width: 32,
             height: 3,
             decoration: BoxDecoration(
-              color: textSecondary.withValues(alpha: 0.15),
+              color: textSecondary.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             'Made with ❤ In India',
             style: TextStyle(
-              color: textSecondary.withValues(alpha: 0.75),
-              fontSize: 10.5,
+              color: textSecondary.withValues(alpha: 0.8),
+              fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.local_fire_department_rounded,
-                color: primary.withValues(alpha: 0.65),
-                size: 11,
+                color: primary.withValues(alpha: 0.7),
+                size: 12,
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: 4),
               Text(
                 'Powered by TADKA AI',
                 style: TextStyle(
-                  color: textSecondary.withValues(alpha: 0.45),
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
+                  color: textSecondary.withValues(alpha: 0.5),
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -2075,16 +2006,17 @@ class _BottomSheetHeader extends StatelessWidget {
                 title,
                 style: TextStyle(
                   color: colors.onSurface,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 1),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: TextStyle(
                   color: colors.onSurfaceVariant,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -2104,51 +2036,56 @@ class _MenuTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final bool isDestructive;
   final VoidCallback onTap;
 
   const _MenuTile({
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.isDestructive = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final iconColor = isDestructive ? colors.error : colors.primary;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       leading: Container(
-        width: 38,
-        height: 38,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: colors.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
+          color: iconColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,
-          color: colors.primary,
-          size: 19,
+          color: iconColor,
+          size: 20,
         ),
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 13,
+        style: TextStyle(
+          fontSize: 14,
           fontWeight: FontWeight.w800,
+          color: isDestructive ? colors.error : colors.onSurface,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
           color: colors.onSurfaceVariant,
-          fontSize: 10,
+          fontSize: 11,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.arrow_forward_ios_rounded,
         size: 12,
+        color: colors.onSurfaceVariant.withValues(alpha: 0.5),
       ),
       onTap: onTap,
     );
@@ -2203,65 +2140,35 @@ class _DailyStreakHomeButton extends StatelessWidget {
 
         return Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           child: InkWell(
             onTap: () => _openStreak(context),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             splashColor: colors.primary.withValues(alpha: 0.05),
             highlightColor: colors.primary.withValues(alpha: 0.025),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colors.primary.withValues(alpha: 0.12),
-                    colors.primary.withValues(alpha: 0.04),
-                    theme.scaffoldBackgroundColor.withValues(alpha: 0.20),
-                  ],
-                  stops: const [0.0, 0.55, 1.0],
-                ),
-                borderRadius: BorderRadius.circular(16),
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: colors.primary.withValues(alpha: 0.14),
+                  color: colors.primary.withValues(alpha: 0.15),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.04),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          colors.primary,
-                          colors.primary.withValues(alpha: 0.78),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.primary.withValues(alpha: 0.22),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.card_giftcard_rounded,
                       color: Colors.white,
-                      size: 19,
+                      size: 20,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2275,28 +2182,28 @@ class _DailyStreakHomeButton extends StatelessWidget {
                               'DAILY REWARD',
                               style: TextStyle(
                                 color: colors.onSurface,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.8,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.7,
                               ),
                             ),
                             if (current > 0) ...[
-                              const SizedBox(width: 5),
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 5,
                                   vertical: 1.5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colors.primary.withValues(alpha: 0.10),
+                                  color: colors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   'DAY $current',
                                   style: TextStyle(
                                     color: colors.primary,
-                                    fontSize: 6.5,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: 7.5,
+                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -2312,34 +2219,32 @@ class _DailyStreakHomeButton extends StatelessWidget {
                                 '+$todayReward',
                                 style: TextStyle(
                                   color: colors.primary,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.3,
                                 ),
                               ),
                               const SizedBox(width: 2),
                               Icon(
                                 Icons.monetization_on_rounded,
                                 color: colors.primary,
-                                size: 13,
+                                size: 14,
                               ),
                               const SizedBox(width: 2),
                               Text(
                                 'COINS',
                                 style: TextStyle(
                                   color: colors.primary,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(width: 5),
+                              const SizedBox(width: 4),
                               Text(
                                 'waiting for you',
                                 style: TextStyle(
                                   color: colors.onSurfaceVariant,
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -2350,24 +2255,24 @@ class _DailyStreakHomeButton extends StatelessWidget {
                               Icon(
                                 Icons.check_circle_rounded,
                                 color: colors.primary,
-                                size: 14,
+                                size: 15,
                               ),
-                              const SizedBox(width: 3),
+                              const SizedBox(width: 4),
                               Text(
                                 '+$todayReward COINS',
                                 style: TextStyle(
                                   color: colors.primary,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(width: 3),
+                              const SizedBox(width: 4),
                               Text(
                                 'claimed',
                                 style: TextStyle(
                                   color: colors.onSurfaceVariant,
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -2390,8 +2295,9 @@ class _DailyStreakHomeButton extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: completed || active
                                         ? colors.primary
-                                        : colors.outline.withValues(alpha: 0.10),
-                                    borderRadius: BorderRadius.circular(8),
+                                        : colors.outline
+                                        .withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                 ),
                               );
@@ -2407,8 +2313,8 @@ class _DailyStreakHomeButton extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: colors.onSurfaceVariant,
-                            fontSize: 7.5,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],

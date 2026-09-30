@@ -60,16 +60,11 @@ class Recipe {
       estimatedCost: estimatedCost ?? this.estimatedCost,
       servings: servings ?? this.servings,
       difficulty: difficulty ?? this.difficulty,
-      ingredientMatch:
-      ingredientMatch ?? this.ingredientMatch,
-      ingredients:
-      ingredients ?? this.ingredients,
-      missingIngredients:
-      missingIngredients ?? this.missingIngredients,
-      substitutions:
-      substitutions ?? this.substitutions,
-      equipment:
-      equipment ?? this.equipment,
+      ingredientMatch: ingredientMatch ?? this.ingredientMatch,
+      ingredients: ingredients ?? this.ingredients,
+      missingIngredients: missingIngredients ?? this.missingIngredients,
+      substitutions: substitutions ?? this.substitutions,
+      equipment: equipment ?? this.equipment,
       steps: steps ?? this.steps,
       tips: tips ?? this.tips,
       warnings: warnings ?? this.warnings,
@@ -78,59 +73,81 @@ class Recipe {
   }
 
   factory Recipe.fromJson(
-      Map<String, dynamic> json,
-      ) {
+      Map<String, dynamic> json, {
+        List<String>? userIngredients,
+      }) {
+    final rawIngredients = _listOfMaps(json['ingredients'])
+        .map(RecipeIngredient.fromJson)
+        .toList();
+
+    // Support camelCase and snake_case from AI responses
+    int parsedMatch = _int(json['ingredientMatch'] ?? json['ingredient_match']);
+
+    // Fallback calculation if AI returns 0 or missing match score
+    if (parsedMatch <= 0) {
+      parsedMatch = calculateMatchPercentage(
+        recipeIngredients: rawIngredients,
+        userIngredients: userIngredients,
+      );
+    }
+
     return Recipe(
       name: _string(json['name']),
       description: _string(json['description']),
-      timeMinutes: _int(json['timeMinutes']),
-      estimatedCost: _int(json['estimatedCost']),
+      timeMinutes: _int(json['timeMinutes'] ?? json['time_minutes']),
+      estimatedCost: _int(json['estimatedCost'] ?? json['estimated_cost']),
       servings: _int(json['servings']),
       difficulty: _string(json['difficulty']),
-      ingredientMatch:
-      _int(json['ingredientMatch']),
-
-      ingredients:
-      _listOfMaps(json['ingredients'])
-          .map(RecipeIngredient.fromJson)
-          .toList(),
-
-      missingIngredients:
-      _stringList(
-        json['missingIngredients'],
+      ingredientMatch: parsedMatch.clamp(0, 100),
+      ingredients: rawIngredients,
+      missingIngredients: _stringList(
+        json['missingIngredients'] ?? json['missing_ingredients'],
       ),
-
-      substitutions:
-      _stringList(
-        json['substitutions'],
-      ),
-
-      equipment:
-      _stringList(
-        json['equipment'],
-      ),
-
-      steps:
-      _stringList(
-        json['steps'],
-      ),
-
-      tips:
-      _stringList(
-        json['tips'],
-      ),
-
-      warnings:
-      _stringList(
-        json['warnings'],
-      ),
-
-      // Normally this is empty because Gemini doesn't
-      // generate the image URL. The service fills it
-      // from Firestore afterwards.
-      imageUrl:
-      _string(json['imageUrl']),
+      substitutions: _stringList(json['substitutions']),
+      equipment: _stringList(json['equipment']),
+      steps: _stringList(json['steps'] ?? json['instructions']),
+      tips: _stringList(json['tips']),
+      warnings: _stringList(json['warnings']),
+      imageUrl: _string(json['imageUrl'] ?? json['image_url']),
     );
+  }
+
+  // Universal fuzzy-matching algorithm for match calculation
+  static int calculateMatchPercentage({
+    required List<RecipeIngredient> recipeIngredients,
+    List<String>? userIngredients,
+  }) {
+    if (recipeIngredients.isEmpty) return 0;
+
+    int matchedCount = 0;
+
+    if (userIngredients != null && userIngredients.isNotEmpty) {
+      final normalizedUserInputs = userIngredients
+          .map((e) => _normalizeString(e))
+          .where((e) => e.isNotEmpty)
+          .toSet();
+
+      for (final ing in recipeIngredients) {
+        final normRecipeIng = _normalizeString(ing.name);
+
+        final isFuzzyMatch = normalizedUserInputs.any((userIng) {
+          return normRecipeIng.contains(userIng) || userIng.contains(normRecipeIng);
+        });
+
+        if (ing.available || isFuzzyMatch) {
+          matchedCount++;
+        }
+      }
+    } else {
+      matchedCount = recipeIngredients.where((i) => i.available).length;
+    }
+
+    final percentage = (matchedCount / recipeIngredients.length) * 100;
+    return percentage.round().clamp(0, 100);
+  }
+
+  static String _normalizeString(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   }
 
   static String _string(dynamic value) {
@@ -139,39 +156,23 @@ class Recipe {
 
   static int _int(dynamic value) {
     if (value is int) return value;
-
-    return int.tryParse(
-      value?.toString() ?? '',
-    ) ??
-        0;
+    if (value is double) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  static List<String> _stringList(
-      dynamic value,
-      ) {
+  static List<String> _stringList(dynamic value) {
     if (value is! List) return [];
-
     return value
-        .map(
-          (item) =>
-          item.toString().trim(),
-    )
-        .where(
-          (item) => item.isNotEmpty,
-    )
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
         .toList();
   }
 
-  static List<Map<String, dynamic>>
-  _listOfMaps(dynamic value) {
+  static List<Map<String, dynamic>> _listOfMaps(dynamic value) {
     if (value is! List) return [];
-
     return value
         .whereType<Map>()
-        .map(
-          (item) =>
-      Map<String, dynamic>.from(item),
-    )
+        .map((item) => Map<String, dynamic>.from(item))
         .toList();
   }
 }
@@ -187,16 +188,19 @@ class RecipeIngredient {
     required this.available,
   });
 
-  factory RecipeIngredient.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) {
     return RecipeIngredient(
-      name:
-      json['name']?.toString() ?? '',
-      quantity:
-      json['quantity']?.toString() ?? '',
-      available:
-      json['available'] == true,
+      name: json['name']?.toString().trim() ?? '',
+      quantity: json['quantity']?.toString().trim() ?? '',
+      available: _bool(json['available']),
     );
+  }
+
+  static bool _bool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+
+    final str = value?.toString().toLowerCase().trim() ?? '';
+    return str == 'true' || str == '1' || str == 'yes';
   }
 }

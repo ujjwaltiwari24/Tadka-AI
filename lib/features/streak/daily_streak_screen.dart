@@ -29,15 +29,15 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
 
   bool _claiming = false;
 
-  late final AnimationController _glowController;
+  late final AnimationController _flamePulseController;
 
   @override
   void initState() {
     super.initState();
 
-    _glowController = AnimationController(
+    _flamePulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
     // Preload interstitial ad early
@@ -46,7 +46,7 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
 
   @override
   void dispose() {
-    _glowController.dispose();
+    _flamePulseController.dispose();
     super.dispose();
   }
 
@@ -71,7 +71,7 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // CLAIM
+  // CLAIM ACTION
   // ===========================================================================
 
   Future<void> _claimReward({
@@ -125,14 +125,15 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   // ===========================================================================
 
   Future<void> _showClaimSuccess(StreakReward reward) async {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     await showGeneralDialog(
       context: context,
       barrierDismissible: false,
       barrierLabel: 'Daily reward claimed',
-      barrierColor: Colors.black.withValues(alpha: 0.65),
-      transitionDuration: const Duration(milliseconds: 280),
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (_, __, ___) {
         return SafeArea(
           child: Center(
@@ -142,16 +143,18 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
                 color: Colors.transparent,
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(28),
+                    color: isDark ? const Color(0xFF18181B) : Colors.white,
+                    borderRadius: BorderRadius.circular(32),
                     border: Border.all(
-                      color: colors.outline.withValues(alpha: 0.12),
+                      color: isDark
+                          ? const Color(0xFF27272A)
+                          : const Color(0xFFE4E4E7),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
+                        color: const Color(0xFFF97316).withValues(alpha: 0.25),
                         blurRadius: 40,
                         offset: const Offset(0, 16),
                       ),
@@ -160,134 +163,130 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              colors.primary,
-                              colors.primary.withValues(alpha: 0.75),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withValues(alpha: 0.35),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: Colors.white,
-                          size: 38,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Reward Claimed!',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Stack(
+                        alignment: Alignment.center,
                         children: [
-                          Text(
-                            '+${reward.coins}',
-                            style: TextStyle(
-                              color: colors.primary,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.monetization_on_rounded,
-                            color: colors.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'COINS',
-                            style: TextStyle(
-                              color: colors.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.8,
+                          Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFFF97316),
+                                  Color(0xFFEA580C),
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFF97316).withValues(alpha: 0.45),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.local_fire_department_rounded,
+                              color: Colors.white,
+                              size: 42,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 22),
                       Text(
-                        'Day ${reward.currentStreak} complete! Your coins have been added to your wallet.',
-                        textAlign: TextAlign.center,
+                        'Day ${reward.currentStreak} Complete!',
                         style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          color: isDark ? Colors.white : const Color(0xFF09090B),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
                       Container(
-                        width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
+                          horizontal: 18,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(14),
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: colors.primary.withValues(alpha: 0.15),
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.restaurant_menu_rounded,
-                              color: colors.primary,
-                              size: 18,
+                            Text(
+                              '+${reward.coins}',
+                              style: const TextStyle(
+                                color: Color(0xFFD97706),
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Use your coins to unlock premium recipes.',
-                                style: TextStyle(
-                                  color: colors.onSurface,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.monetization_on_rounded,
+                              color: Color(0xFFD97706),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'ADDED TO WALLET',
+                              style: TextStyle(
+                                color: Color(0xFFD97706),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.8,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Great job! Keep your daily streak going to unlock maximum milestone rewards.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
-                        height: 48,
-                        child: FilledButton(
+                        height: 52,
+                        child: ElevatedButton(
                           onPressed: () => Navigator.pop(context),
-                          style: FilledButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF97316),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: const Text(
-                            'Continue',
+                            'Awesome!',
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
-                              fontSize: 14,
+                              fontSize: 15,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
@@ -324,14 +323,29 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(
-            message,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       );
@@ -344,10 +358,10 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
@@ -399,31 +413,31 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
                     CustomScrollView(
                       physics: const BouncingScrollPhysics(),
                       slivers: [
-                        SliverToBoxAdapter(child: _buildHeader(colors)),
-                        SliverToBoxAdapter(child: _buildBalanceCard(colors)),
+                        SliverToBoxAdapter(child: _buildHeader(isDark)),
+                        SliverToBoxAdapter(child: _buildWalletBar(isDark)),
                         if (streakBroken)
                           SliverToBoxAdapter(
-                            child: _buildStreakBrokenBanner(colors),
+                            child: _buildStreakBrokenBanner(isDark),
                           ),
                         SliverToBoxAdapter(
-                          child: _buildHero(
-                            colors,
+                          child: _buildHeroDashboard(
+                            isDark,
                             current,
                             longest,
                             claimedToday,
                           ),
                         ),
                         SliverToBoxAdapter(
-                          child: _buildJourney(
-                            colors,
+                          child: _buildHorizontalMilestoneTrack(
+                            isDark,
                             current,
                             claimDay,
                             claimedToday,
                           ),
                         ),
                         SliverToBoxAdapter(
-                          child: _buildTodayReward(
-                            colors,
+                          child: _buildStatusInsightCard(
+                            isDark,
                             claimedToday,
                             current,
                             claimDay,
@@ -432,32 +446,23 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
                             tomorrowReward,
                           ),
                         ),
-                        SliverToBoxAdapter(child: _buildHowCoinsWork(colors)),
-                        SliverToBoxAdapter(
-                          child: _buildReturnCard(
-                            colors,
-                            current,
-                            claimedToday,
-                            tomorrowDay,
-                            tomorrowReward,
-                          ),
-                        ),
+                        SliverToBoxAdapter(child: _buildUtilityGuide(isDark)),
                         const SliverToBoxAdapter(
                           child: SizedBox(height: 120),
                         ),
                       ],
                     ),
                     Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
+                      left: 16,
+                      right: 16,
+                      bottom: 16,
                       child: !claimedToday
-                          ? _buildPersistentClaimBar(
-                        colors,
+                          ? _buildFloatingClaimCTA(
+                        isDark,
                         todayReward,
                         claimDay,
                       )
-                          : _buildClaimedBottomBar(colors, tomorrowReward),
+                          : _buildClaimedFloatingBar(isDark, tomorrowReward),
                     ),
                   ],
                 );
@@ -470,7 +475,7 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // SIGN IN
+  // SIGN IN NAVIGATOR
   // ===========================================================================
 
   Future<void> _openSignIn() async {
@@ -484,68 +489,54 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   // HEADER
   // ===========================================================================
 
-  Widget _buildHeader(ColorScheme colors) {
+  Widget _buildHeader(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          Material(
-            color: colors.surface,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colors.outline.withValues(alpha: 0.12),
-                  ),
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+            style: IconButton.styleFrom(
+              backgroundColor: isDark ? const Color(0xFF18181B) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
                 ),
-                child: const Icon(Icons.arrow_back_rounded, size: 18),
               ),
             ),
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              size: 20,
+              color: isDark ? Colors.white : const Color(0xFF09090B),
+            ),
           ),
-          const SizedBox(width: 12),
-          const Expanded(
+          const SizedBox(width: 14),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Daily Rewards',
+                  'Daily Streak',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
+                    color: isDark ? Colors.white : const Color(0xFF09090B),
                   ),
                 ),
-                SizedBox(height: 2),
                 Text(
-                  'Log in daily to unlock coins',
+                  'Check in daily for coins & rewards',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
+                    color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
                   ),
                 ),
               ],
-            ),
-          ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.card_giftcard_rounded,
-              color: colors.primary,
-              size: 20,
             ),
           ),
         ],
@@ -554,32 +545,31 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // BALANCE CARD
+  // WALLET BALANCE CARD
   // ===========================================================================
 
-  Widget _buildBalanceCard(ColorScheme colors) {
+  Widget _buildWalletBar(bool isDark) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(18),
+        color: isDark ? const Color(0xFF18181B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: colors.outline.withValues(alpha: 0.10),
+          color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
         ),
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.10),
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.monetization_on_rounded,
-              color: colors.primary,
+            child: const Icon(
+              Icons.account_balance_wallet_rounded,
+              color: Color(0xFFD97706),
               size: 20,
             ),
           ),
@@ -589,20 +579,19 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'COIN BALANCE',
+                  'WALLET BALANCE',
                   style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 9,
+                    color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  'Available in wallet',
+                  'Use them to unlock recipes for FREE',
                   style: TextStyle(
-                    color: colors.onSurface,
-                    fontSize: 11,
+                    color: isDark ? Colors.white : const Color(0xFF09090B),
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -615,25 +604,28 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
               final coins = snapshot.data ?? 0;
 
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.monetization_on_rounded,
-                      color: colors.primary,
+                      color: Color(0xFFD97706),
                       size: 16,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
                       '$coins',
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontSize: 14,
+                      style: const TextStyle(
+                        color: Color(0xFFD97706),
+                        fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -651,39 +643,39 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   // STREAK BROKEN BANNER
   // ===========================================================================
 
-  Widget _buildStreakBrokenBanner(ColorScheme colors) {
+  Widget _buildStreakBrokenBanner(bool isDark) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colors.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFEF4444).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: colors.error.withValues(alpha: 0.25),
+          color: const Color(0xFFEF4444).withValues(alpha: 0.25),
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.heart_broken_rounded, color: colors.error, size: 20),
-          const SizedBox(width: 10),
+          const Icon(Icons.heart_broken_rounded, color: Color(0xFFEF4444), size: 22),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Streak Reset',
                   style: TextStyle(
-                    color: colors.error,
-                    fontSize: 12,
+                    color: Color(0xFFEF4444),
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text(
-                  'You missed a day! Claim now to start your Day 1 streak.',
+                  'You missed a day! Claim today to start your new Day 1 streak.',
                   style: TextStyle(
-                    color: colors.onSurface,
-                    fontSize: 11,
+                    color: isDark ? const Color(0xFFF4F4F5) : const Color(0xFF18181B),
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -696,11 +688,11 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // HERO
+  // HERO DASHBOARD
   // ===========================================================================
 
-  Widget _buildHero(
-      ColorScheme colors,
+  Widget _buildHeroDashboard(
+      bool isDark,
       int current,
       int longest,
       bool claimedToday,
@@ -708,55 +700,69 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
     final progress = (current.clamp(0, 7) / 7).toDouble();
 
     return AnimatedBuilder(
-      animation: _glowController,
+      animation: _flamePulseController,
       builder: (context, child) {
-        final glow = 0.12 + (_glowController.value * 0.06);
+        final glowScale = 0.15 + (_flamePulseController.value * 0.10);
 
         return Container(
-          margin: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                colors.primary,
-                colors.primary.withValues(alpha: 0.82),
+                Color(0xFF111827),
+                Color(0xFF1F2937),
               ],
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: colors.primary.withValues(alpha: glow),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: const Color(0xFFF97316).withValues(alpha: glowScale),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
           child: Column(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 90,
+                    height: 90,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 6,
+                      backgroundColor: Colors.white.withValues(alpha: 0.10),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFFF97316),
+                      ),
+                    ),
                   ),
-                ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFF97316),
+                      size: 38,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text(
-                current == 0 ? 'Start Your Streak' : '$current Day Streak',
+                current == 0 ? 'Start Your Streak' : '$current Day Streak!',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
                 ),
@@ -764,46 +770,63 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
               const SizedBox(height: 4),
               Text(
                 claimedToday
-                    ? 'Today’s reward is safely in your wallet.'
+                    ? 'Today’s check-in complete. Come back tomorrow!'
                     : 'Claim your daily reward to keep your streak alive.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.90),
-                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 6,
-                  backgroundColor: Colors.white.withValues(alpha: 0.22),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '$current / 7 days completed',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF22C55E),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$current / 7 Days',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    'Best: $longest days',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.emoji_events_rounded,
+                          color: Color(0xFFF59E0B),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Best: $longest Days',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -813,101 +836,164 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // 7 DAY JOURNEY
+  // HORIZONTAL MILESTONE TRACK
   // ===========================================================================
 
-  Widget _buildJourney(
-      ColorScheme colors,
+  Widget _buildHorizontalMilestoneTrack(
+      bool isDark,
       int current,
       int claimDay,
       bool claimedToday,
       ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colors.outline.withValues(alpha: 0.10),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '7-DAY REWARD TIMELINE',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Earn up to 75 total coins per week',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+              Text(
+                'STREAK MILESTONES',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.9,
+                  color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'WEEKLY GOAL',
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
+              const Text(
+                '75 Total Coins/Week',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFF97316),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          ...List.generate(
-            7,
-                (index) {
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 128,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: 7,
+            itemBuilder: (context, index) {
               final day = index + 1;
               final reward = _dayReward(day);
               final completed = current >= day;
               final active = !claimedToday && day == claimDay && !completed;
+              final isJackpot = day == 7;
 
-              return _RewardRow(
-                day: day,
-                reward: reward,
-                completed: completed,
-                active: active,
-                isLast: day == 7,
-                primary: colors.primary,
+              return Container(
+                width: isJackpot ? 110 : 88,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isJackpot
+                      ? (isDark ? const Color(0xFF312E81) : const Color(0xFFEEF2FF))
+                      : (completed
+                      ? (isDark ? const Color(0xFF18181B) : Colors.white)
+                      : (active
+                      ? (isDark ? const Color(0xFF27272A) : Colors.white)
+                      : (isDark ? const Color(0xFF121215) : const Color(0xFFF1F5F9)))),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: active
+                        ? const Color(0xFFF97316)
+                        : (isJackpot
+                        ? const Color(0xFF6366F1)
+                        : (completed
+                        ? const Color(0xFF22C55E).withValues(alpha: 0.5)
+                        : (isDark ? const Color(0xFF27272A) : const Color(0xFFE2E8F0)))),
+                    width: active || isJackpot ? 2 : 1,
+                  ),
+                  boxShadow: active
+                      ? [
+                    BoxShadow(
+                      color: const Color(0xFFF97316).withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                      : null,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isJackpot ? 'DAY 7 👑' : 'Day $day',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w900,
+                        color: active
+                            ? const Color(0xFFF97316)
+                            : (isDark ? Colors.white : const Color(0xFF09090B)),
+                      ),
+                    ),
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: completed
+                            ? const Color(0xFF22C55E)
+                            : (active
+                            ? const Color(0xFFF97316)
+                            : (isDark ? const Color(0xFF27272A) : const Color(0xFFE2E8F0))),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        completed
+                            ? Icons.check_rounded
+                            : (active
+                            ? Icons.local_fire_department_rounded
+                            : Icons.lock_outline_rounded),
+                        color: completed || active
+                            ? Colors.white
+                            : (isDark ? const Color(0xFF71717A) : const Color(0xFF94A3B8)),
+                        size: 18,
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '+$reward',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: active
+                                ? const Color(0xFFF97316)
+                                : (isDark ? Colors.white : const Color(0xFF09090B)),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.monetization_on_rounded,
+                          color: Color(0xFFF59E0B),
+                          size: 12,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               );
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   // ===========================================================================
-  // TODAY REWARD CARD
+  // STATUS INSIGHT CARD
   // ===========================================================================
 
-  Widget _buildTodayReward(
-      ColorScheme colors,
+  Widget _buildStatusInsightCard(
+      bool isDark,
       bool claimedToday,
       int current,
       int claimDay,
@@ -918,13 +1004,13 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
     final displayedDay = claimedToday ? current.clamp(1, 7) : claimDay;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF18181B) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: colors.primary.withValues(alpha: 0.15),
+          color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
         ),
       ),
       child: Column(
@@ -932,43 +1018,42 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   claimedToday
-                      ? Icons.check_circle_rounded
+                      ? Icons.task_alt_rounded
                       : Icons.card_giftcard_rounded,
-                  color: colors.primary,
-                  size: 20,
+                  color: const Color(0xFFF97316),
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      claimedToday ? 'TODAY\'S CLAIM' : 'READY TO CLAIM',
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontSize: 9,
+                      claimedToday ? 'CHECK-IN COMPLETE' : 'READY TO CLAIM',
+                      style: const TextStyle(
+                        color: Color(0xFFF97316),
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
+                        letterSpacing: 0.9,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       claimedToday
-                          ? 'Day $displayedDay Completed'
-                          : 'Day $displayedDay Reward',
+                          ? 'Day $displayedDay Claimed'
+                          : 'Day $displayedDay Bonus Available',
                       style: TextStyle(
-                        color: colors.onSurface,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF09090B),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
@@ -979,48 +1064,48 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
                 children: [
                   Text(
                     '+$todayReward',
-                    style: TextStyle(
-                      color: colors.primary,
-                      fontSize: 18,
+                    style: const TextStyle(
+                      color: Color(0xFFF97316),
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(
+                  const Icon(
                     Icons.monetization_on_rounded,
-                    color: colors.primary,
-                    size: 16,
+                    color: Color(0xFFF59E0B),
+                    size: 18,
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(12),
+              color: isDark ? const Color(0xFF27272A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               children: [
                 Icon(
                   claimedToday
-                      ? Icons.check_circle_outline_rounded
+                      ? Icons.schedule_rounded
                       : Icons.touch_app_rounded,
-                  color: colors.primary,
-                  size: 16,
+                  color: const Color(0xFFF97316),
+                  size: 18,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     claimedToday
-                        ? 'Today’s reward is active in your account.'
-                        : 'Tap the claim button below to add coins.',
+                        ? 'Come back tomorrow for Day $tomorrowDay (+$tomorrowReward coins).'
+                        : 'Tap the button below to add coins to your wallet.',
                     style: TextStyle(
-                      color: colors.onSurfaceVariant,
-                      fontSize: 11,
+                      color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF64748B),
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1034,18 +1119,18 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // HOW COINS WORK
+  // UTILITY GUIDE
   // ===========================================================================
 
-  Widget _buildHowCoinsWork(ColorScheme colors) {
+  Widget _buildUtilityGuide(bool isDark) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF18181B) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: colors.outline.withValues(alpha: 0.10),
+          color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
         ),
       ),
       child: Column(
@@ -1053,43 +1138,34 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline_rounded,
-                color: colors.primary,
-                size: 18,
+              const Icon(
+                Icons.lightbulb_outline_rounded,
+                color: Color(0xFFF59E0B),
+                size: 20,
               ),
-              const SizedBox(width: 8),
-              const Text(
-                'HOW COINS WORK',
+              const SizedBox(width: 10),
+              Text(
+                'WHAT CAN YOU DO WITH COINS?',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
+                  letterSpacing: 0.9,
+                  color: isDark ? Colors.white : const Color(0xFF09090B),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            'Use coins to unlock customized AI recipes once your free daily requests are used.',
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              height: 1.4,
-            ),
-          ),
           const SizedBox(height: 12),
-          _InfoLine(
-            icon: Icons.card_giftcard_rounded,
-            text: 'Claim daily rewards to maintain your balance.',
-            primary: colors.primary,
+          _GuideItem(
+            icon: Icons.restaurant_menu_rounded,
+            text: 'Unlock custom AI recipe generations when daily limits end.',
+            isDark: isDark,
           ),
-          const SizedBox(height: 8),
-          _InfoLine(
+          const SizedBox(height: 10),
+          _GuideItem(
             icon: Icons.play_circle_fill_rounded,
-            text: 'Watch rewarded ads to earn extra bonus coins anytime.',
-            primary: colors.primary,
+            text: 'Earn extra coins anytime by watching quick rewarded video ads.',
+            isDark: isDark,
           ),
         ],
       ),
@@ -1097,350 +1173,140 @@ class _DailyStreakScreenState extends State<DailyStreakScreen>
   }
 
   // ===========================================================================
-  // RETURN CARD
+  // FLOATING CLAIM CTA BAR
   // ===========================================================================
 
-  Widget _buildReturnCard(
-      ColorScheme colors,
-      int current,
-      bool claimedToday,
-      int tomorrowDay,
-      int tomorrowReward,
+  Widget _buildFloatingClaimCTA(
+      bool isDark,
+      int reward,
+      int day,
       ) {
-    final title = current == 0
-        ? 'First reward ready'
-        : claimedToday
-        ? 'Next: Day $tomorrowDay (+$tomorrowReward Coins)'
-        : 'Reward waiting';
-
-    final subtitle = current == 0
-        ? 'Claim today to start your 7-day streak.'
-        : claimedToday
-        ? 'Come back tomorrow to keep your streak going.'
-        : 'Claim today’s coins to keep your streak active.';
-
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? const Color(0xFF18181B) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(
-            claimedToday ? Icons.event_available_rounded : Icons.star_rounded,
-            color: colors.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                const Text(
+                  'TODAY\'S REWARD',
+                  style: TextStyle(
+                    color: Color(0xFFF97316),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.9,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  subtitle,
+                  '+$reward Coins Ready',
                   style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : const Color(0xFF09090B),
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ===========================================================================
-  // PERSISTENT CLAIM BAR
-  // ===========================================================================
-
-  Widget _buildPersistentClaimBar(
-      ColorScheme colors,
-      int reward,
-      int day,
-      ) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.outline.withValues(alpha: 0.10)),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
+          SizedBox(
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: _claiming
+                  ? null
+                  : () => _claimReward(
+                expectedDay: day,
+                expectedReward: reward,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF97316),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+              ),
+              icon: _claiming
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              )
+                  : const Icon(Icons.local_fire_department_rounded, size: 20),
+              label: Text(
+                _claiming ? 'Claiming...' : 'Claim +$reward Coins',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'DAY $day REWARD',
-                    style: TextStyle(
-                      color: colors.primary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    '+$reward Coins Ready',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 44,
-              child: FilledButton.icon(
-                onPressed: _claiming
-                    ? null
-                    : () => _claimReward(
-                  expectedDay: day,
-                  expectedReward: reward,
-                ),
-                icon: _claiming
-                    ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                    : const Icon(Icons.local_fire_department_rounded, size: 18),
-                label: Text(
-                  _claiming ? 'Claiming...' : 'Claim +$reward Coins',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  ),
-                ),
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   // ===========================================================================
-  // CLAIMED BOTTOM BAR
+  // CLAIMED FLOATING BAR
   // ===========================================================================
 
-  Widget _buildClaimedBottomBar(
-      ColorScheme colors,
+  Widget _buildClaimedFloatingBar(
+      bool isDark,
       int tomorrowReward,
       ) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.outline.withValues(alpha: 0.10)),
+        color: isDark ? const Color(0xFF18181B) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
         ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: colors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Claimed today! Come back tomorrow for +$tomorrowReward coins.',
-                  style: TextStyle(
-                    color: colors.onSurface,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
-    );
-  }
-}
-
-// =============================================================================
-// REWARD ROW
-// =============================================================================
-
-class _RewardRow extends StatelessWidget {
-  final int day;
-  final int reward;
-  final bool completed;
-  final bool active;
-  final bool isLast;
-  final Color primary;
-
-  const _RewardRow({
-    required this.day,
-    required this.reward,
-    required this.completed,
-    required this.active,
-    required this.isLast,
-    required this.primary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: isLast ? 48 : 58,
-      child: Stack(
+      child: Row(
         children: [
-          if (!isLast)
-            Positioned(
-              left: 17,
-              top: 32,
-              bottom: 0,
-              child: Container(
-                width: 2,
-                color: completed
-                    ? primary.withValues(alpha: 0.3)
-                    : colors.outline.withValues(alpha: 0.10),
+          const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF22C55E),
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Reward claimed! Check in tomorrow for +$tomorrowReward coins.',
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF09090B),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: completed
-                      ? primary
-                      : active
-                      ? colors.surface
-                      : colors.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: active
-                        ? primary
-                        : completed
-                        ? primary
-                        : colors.outline.withValues(alpha: 0.15),
-                    width: active ? 2 : 1,
-                  ),
-                ),
-                child: Center(
-                  child: completed
-                      ? const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 18)
-                      : active
-                      ? Icon(Icons.local_fire_department_rounded,
-                      color: primary, size: 18)
-                      : Icon(Icons.lock_outline_rounded,
-                      color: colors.onSurfaceVariant, size: 15),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Day $day',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: completed || active
-                            ? colors.onSurface
-                            : colors.onSurfaceVariant,
-                      ),
-                    ),
-                    Text(
-                      completed
-                          ? 'Collected'
-                          : active
-                          ? 'Ready to claim'
-                          : 'Locked',
-                      style: TextStyle(
-                        color: active ? primary : colors.onSurfaceVariant,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: completed || active
-                      ? primary.withValues(alpha: 0.10)
-                      : colors.outline.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '+$reward',
-                      style: TextStyle(
-                        color: completed || active
-                            ? primary
-                            : colors.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Icon(
-                      Icons.monetization_on_rounded,
-                      color: completed || active
-                          ? primary
-                          : colors.onSurfaceVariant,
-                      size: 13,
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -1449,36 +1315,35 @@ class _RewardRow extends StatelessWidget {
 }
 
 // =============================================================================
-// INFO LINE
+// HELPER GUIDE ITEM
 // =============================================================================
 
-class _InfoLine extends StatelessWidget {
+class _GuideItem extends StatelessWidget {
   final IconData icon;
   final String text;
-  final Color primary;
+  final bool isDark;
 
-  const _InfoLine({
+  const _GuideItem({
     required this.icon,
     required this.text,
-    required this.primary,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 15, color: primary),
-        const SizedBox(width: 8),
+        Icon(icon, size: 16, color: const Color(0xFFF97316)),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 11,
+              color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF64748B),
+              fontSize: 12,
               fontWeight: FontWeight.w500,
+              height: 1.4,
             ),
           ),
         ),
@@ -1496,25 +1361,26 @@ class _AuthLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Center(
+      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF8FAFC),
+      body: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 24,
-              height: 24,
+              width: 28,
+              height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: colors.primary,
+                color: Color(0xFFF97316),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
+            SizedBox(height: 14),
+            Text(
               'Loading rewards...',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -1534,76 +1400,85 @@ class _SignedOutView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 76,
+                  height: 76,
                   decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.10),
+                    color: const Color(0xFFF97316).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.card_giftcard_rounded,
-                    color: colors.primary,
-                    size: 32,
+                    color: Color(0xFFF97316),
+                    size: 38,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                const SizedBox(height: 20),
+                Text(
                   'Daily Rewards',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
+                    color: isDark ? Colors.white : const Color(0xFF09090B),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   'Sign in to collect daily coins and unlock custom AI recipes.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 12,
+                    color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    height: 1.4,
+                    height: 1.45,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  height: 46,
-                  child: FilledButton(
+                  height: 50,
+                  child: ElevatedButton(
                     onPressed: onSignIn,
-                    style: FilledButton.styleFrom(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF97316),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: const Text(
                       'Sign In to Continue',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     'Go Back',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
+                    ),
                   ),
                 ),
               ],
