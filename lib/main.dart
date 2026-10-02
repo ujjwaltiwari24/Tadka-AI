@@ -7,26 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'app/app.dart';
 import 'app/theme/app_theme.dart';
 
-// ============================================================================
-// CURRENT APP VERSION
-// ============================================================================
-//
-// IMPORTANT:
-// Keep this value synchronized with the app's versionCode.
-//
-// Example:
-// pubspec.yaml -> version: 1.0.1+12
-// currentVersion -> 12
-//
-// Firebase:
-// appVersion/latestVersion -> 12
-//
-// When you release 1.0.2+13:
-// currentVersion -> 13
-// Firebase latestVersion -> 13
-// ============================================================================
-
-const int currentVersion = 12;
+const int currentVersion = 13;
 
 // ============================================================================
 // PLAY STORE URL

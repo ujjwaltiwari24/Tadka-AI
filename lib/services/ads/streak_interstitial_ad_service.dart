@@ -18,10 +18,10 @@ class StreakInterstitialAdService {
   static const String _debugAdUnitId =
       'ca-app-pub-3940256099942544/1033173712';
 
-  // TADKA AI production interstitial supplied by the developer.
+  // TADKA AI production streak interstitial.
   // Used only in release builds.
   static const String _productionAdUnitId =
-      'ca-app-pub-8115235789134813/4883416699';
+      'ca-app-pub-8115235789134813/5577710366';
 
   String get _adUnitId =>
       kDebugMode ? _debugAdUnitId : _productionAdUnitId;
@@ -51,7 +51,7 @@ class StreakInterstitialAdService {
           _isLoading = false;
 
           debugPrint(
-            'Streak interstitial loaded successfully.',
+            'TADKA: Streak interstitial loaded successfully.',
           );
 
           if (!completer.isCompleted) {
@@ -63,7 +63,19 @@ class StreakInterstitialAdService {
           _isLoading = false;
 
           debugPrint(
-            'Streak interstitial failed to load: $error',
+            'TADKA: Streak interstitial failed to load.',
+          );
+          debugPrint(
+            'TADKA: Domain: ${error.domain}',
+          );
+          debugPrint(
+            'TADKA: Code: ${error.code}',
+          );
+          debugPrint(
+            'TADKA: Message: ${error.message}',
+          );
+          debugPrint(
+            'TADKA: ResponseInfo: ${error.responseInfo}',
           );
 
           if (!completer.isCompleted) {
@@ -87,7 +99,7 @@ class StreakInterstitialAdService {
 
     if (ad == null) {
       debugPrint(
-        'Streak interstitial unavailable. Continuing without ad.',
+        'TADKA: Streak interstitial unavailable. Continuing without ad.',
       );
       return false;
     }
@@ -99,44 +111,55 @@ class StreakInterstitialAdService {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         debugPrint(
-          'Streak interstitial shown.',
+          'TADKA: Streak interstitial shown.',
         );
       },
+
       onAdImpression: (ad) {
         debugPrint(
-          'Streak interstitial impression recorded.',
+          'TADKA: Streak interstitial impression recorded.',
         );
       },
+
       onAdClicked: (ad) {
         debugPrint(
-          'Streak interstitial clicked.',
+          'TADKA: Streak interstitial clicked.',
         );
       },
+
       onAdFailedToShowFullScreenContent: (
           ad,
           error,
           ) {
         debugPrint(
-          'Streak interstitial failed to show: $error',
+          'TADKA: Streak interstitial failed to show.',
+        );
+        debugPrint(
+          'TADKA: Domain: ${error.domain}',
+        );
+        debugPrint(
+          'TADKA: Code: ${error.code}',
+        );
+        debugPrint(
+          'TADKA: Message: ${error.message}',
         );
 
         ad.dispose();
 
-        // Prepare the next ad.
         preload();
 
         if (!completer.isCompleted) {
           completer.complete(false);
         }
       },
+
       onAdDismissedFullScreenContent: (ad) {
         debugPrint(
-          'Streak interstitial dismissed.',
+          'TADKA: Streak interstitial dismissed.',
         );
 
         ad.dispose();
 
-        // Preload the next interstitial for a future claim.
         preload();
 
         if (!completer.isCompleted) {
@@ -145,7 +168,21 @@ class StreakInterstitialAdService {
       },
     );
 
-    ad.show();
+    try {
+      ad.show();
+    } catch (error) {
+      debugPrint(
+        'TADKA: Exception while showing streak interstitial: $error',
+      );
+
+      ad.dispose();
+
+      preload();
+
+      if (!completer.isCompleted) {
+        completer.complete(false);
+      }
+    }
 
     return completer.future;
   }
@@ -156,6 +193,7 @@ class StreakInterstitialAdService {
 
   void dispose() {
     _interstitialAd?.dispose();
+
     _interstitialAd = null;
     _isLoading = false;
   }
